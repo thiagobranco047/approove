@@ -1,0 +1,48 @@
+# Approove - Regras do Projeto
+
+## Stack
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Prisma + PostgreSQL
+- Swiper
+
+## Convenções de Código
+
+### TypeScript
+- Usar tipos explícitos sempre que possível
+- Evitar `any`, preferir tipos específicos
+- Usar interfaces para objetos complexos
+
+### React/Next.js
+- Componentes client-side devem ter "use client" no topo
+- Preferir Server Components quando possível
+- Usar hooks de forma consistente
+
+### Estilo
+- Tailwind CSS para estilos
+- Componentes shadcn/ui para UI base
+- Classes utilitárias sobre CSS customizado
+
+### Banco de Dados
+- Todas as queries via Prisma
+- Usar transações quando necessário
+- Incluir indexes apropriados
+
+### API Routes
+- Validar token em todas as rotas protegidas
+- Retornar erros apropriados (401, 403, 404, 500)
+- Usar tipagem forte nos responses
+
+## Estrutura de Arquivos
+- `/app` - Páginas e rotas API
+- `/components` - Componentes React
+- `/components/ui` - Componentes shadcn/ui
+- `/lib` - Utilitários e helpers
+- `/prisma` - Schema e migrations
+
+## Segurança
+- Sempre validar tokens
+- Sanitizar inputs do usuário
+- Usar HTTPS em produção

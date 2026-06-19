@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
+import { PostProductionFields, type TeamMemberOption } from "@/components/post-production-fields";
+
+interface TeamMember extends TeamMemberOption {}
+
+interface PostHandoffDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  postId: string;
+  initialStage: string;
+  initialAssigneeId: string | null;
+  members: TeamMember[];
+  onSuccess: () => void;
+}
+
+export function PostHandoffDialog({
+  open,
+  onOpenChange,
+  postId,
+  initialStage,
+  initialAssigneeId,
+  members,
+  onSuccess,
+}: PostHandoffDialogProps) {
+  const [stage, setStage] = useState(initialStage);
+  const [assigneeId, setAssigneeId] = useState(initialAssigneeId ?? "");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setStage(initialStage);
+      setAssigneeId(initialAssigneeId ?? "");
+      setNote("");
+      setError(null);
+    }
+    onOpenChange(next);
+  };
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/posts/${postId}/handoff`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productionStage: stage,
+          assigneeId: assigneeId || null,
+          handoffNote: note.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Erro ao transferir tarefa");
+        return;
+      }
+      onSuccess();
+      onOpenChange(false);
+    } catch {
+      setError("Erro de conexão. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Transferir tarefa</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <PostProductionFields
+            stage={stage}
+            assigneeId={assigneeId}
+            note={note}
+            members={members}
+            onStageChange={setStage}
+            onAssigneeChange={setAssigneeId}
+            onNoteChange={setNote}
+            idPrefix="handoff"
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Transferir
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
