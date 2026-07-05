@@ -568,9 +568,9 @@ Or put a sandbox restricted key in local `.env` as `STRIPE_SECRET_KEY`.
 
 Create monthly recurring prices:
 
-- Product: Approove Starter, Price: BRL 97/month
-- Product: Approove Pro, Price: BRL 197/month
-- Product: Approove Studio, Price: BRL 497/month
+- Product: Approove SaaS - Starter, Price: BRL 97/month, Metadata: `app=approove`, `product=approove-saas`, `plan=starter`
+- Product: Approove SaaS - Pro, Price: BRL 197/month, Metadata: `app=approove`, `product=approove-saas`, `plan=pro`
+- Product: Approove SaaS - Studio, Price: BRL 497/month, Metadata: `app=approove`, `product=approove-saas`, `plan=studio`
 
 Store returned `price_...` IDs in `.env`.
 
