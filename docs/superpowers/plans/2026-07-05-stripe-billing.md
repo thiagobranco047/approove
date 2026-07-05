@@ -103,7 +103,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2026-02-25.clover",
+  apiVersion: "2026-06-24.dahlia",
 });
 ```
 
@@ -568,9 +568,9 @@ Or put a sandbox restricted key in local `.env` as `STRIPE_SECRET_KEY`.
 
 Create monthly recurring prices:
 
-- Product: Approove SaaS - Starter, Price: BRL 97/month, Metadata: `app=approove`, `product=approove-saas`, `plan=starter`
-- Product: Approove SaaS - Pro, Price: BRL 197/month, Metadata: `app=approove`, `product=approove-saas`, `plan=pro`
-- Product: Approove SaaS - Studio, Price: BRL 497/month, Metadata: `app=approove`, `product=approove-saas`, `plan=studio`
+- Product: Approove SaaS - Starter, Price: USD 25/month, Metadata: `app=approove`, `product=approove-saas`, `plan=starter`
+- Product: Approove SaaS - Pro, Price: USD 75/month, Metadata: `app=approove`, `product=approove-saas`, `plan=pro`
+- Product: Approove SaaS - Studio, Price: USD 150/month, Metadata: `app=approove`, `product=approove-saas`, `plan=studio`
 
 Store returned `price_...` IDs in `.env`.
 

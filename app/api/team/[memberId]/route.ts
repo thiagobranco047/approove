@@ -77,7 +77,7 @@ export async function PATCH(
     }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0]?.message ?? "Dados inválidos" },
         { status: 400 }
       );
     }

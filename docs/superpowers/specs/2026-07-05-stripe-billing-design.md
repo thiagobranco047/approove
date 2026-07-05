@@ -27,9 +27,9 @@ Use Stripe Customer Portal for plan changes, cancellation, invoices, and payment
 
 Create three Stripe products/prices in sandbox:
 
-- Approove SaaS - Starter: BRL 97/month
-- Approove SaaS - Pro: BRL 197/month
-- Approove SaaS - Studio: BRL 497/month
+- Approove SaaS - Starter: USD 25/month
+- Approove SaaS - Pro: USD 75/month
+- Approove SaaS - Studio: USD 150/month
 
 This Stripe account is a company umbrella account, so every Stripe object created for this app must be clearly namespaced with `Approove SaaS` and metadata:
 
