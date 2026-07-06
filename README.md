@@ -74,6 +74,14 @@ BLOB_READ_WRITE_TOKEN=""
 # E-mail (Resend — convites de revisor no piloto)
 RESEND_API_KEY=""
 EMAIL_FROM="Approove <convites@seudominio.com>"
+
+# Stripe Billing (sandbox/dev)
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""
+STRIPE_PRICE_STARTER=""
+STRIPE_PRICE_PRO=""
+STRIPE_PRICE_STUDIO=""
+STRIPE_PORTAL_CONFIGURATION_ID=""
 ```
 
 ### 3. Configure o banco e popule com dados de exemplo
@@ -161,6 +169,29 @@ Necessário para **enviar o link de convite automaticamente** ao cadastrar um re
 4. `NEXTAUTH_URL` deve ser a URL pública final — os links nos e-mails usam esse valor
 
 > Em desenvolvimento local, convites sem Resend configurado exibem aviso na interface; use **Copiar link** na lista de revisores.
+
+## Configurar Stripe Billing
+
+Use Stripe em modo sandbox/teste.
+
+1. Autentique o Stripe CLI ou MCP na conta da empresa.
+2. Crie produtos/preços com prefixo `Approove SaaS` para separar este app dos outros produtos da conta.
+3. Copie os Price IDs para `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_STUDIO`.
+4. Crie uma configuração do Customer Portal para os produtos `Approove SaaS` e copie o ID para `STRIPE_PORTAL_CONFIGURATION_ID`.
+5. Rode o listener de webhook:
+   ```bash
+   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   ```
+6. Copie o `whsec_...` para `STRIPE_WEBHOOK_SECRET`.
+7. Em `/dashboard/settings`, abra Checkout em nova aba e pague com cartão de teste Stripe.
+
+Objetos sandbox criados para este app:
+
+| Plano | Produto Stripe | Preço |
+|-------|----------------|-------|
+| Starter | `Approove SaaS - Starter` | US$25/mês |
+| Pro | `Approove SaaS - Pro` | US$75/mês |
+| Studio | `Approove SaaS - Studio` | US$150/mês |
 
 ## Piloto fechado — deploy e checklist
 

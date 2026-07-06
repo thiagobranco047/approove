@@ -13,7 +13,7 @@ export async function requireAuth() {
     throw new Error("Unauthorized");
   }
 
-  return session.user;
+  return { ...session.user, id: session.user.id };
 }
 
 export async function getUserOrganization(userId: string) {

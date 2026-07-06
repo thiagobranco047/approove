@@ -1039,7 +1039,7 @@ function SimpleCalendar({
     new Date().getFullYear() === year && new Date().getMonth() === month;
 
   // Count posts in this month
-  const monthPostCount = days.reduce((count, day) => {
+  const monthPostCount = days.reduce<number>((count, day) => {
     if (!day) return count;
     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return count + (posts[dateKey]?.length || 0);
