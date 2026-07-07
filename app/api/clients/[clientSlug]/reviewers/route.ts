@@ -4,6 +4,7 @@ import { requireOrganization } from "@/lib/auth";
 import type { ClientInviteRole } from "@/lib/share-access";
 import { sendEmail } from "@/lib/email";
 import { buildReviewerInviteEmail } from "@/lib/email-templates/reviewer-invite";
+import { planAllows, planLimitResponse } from "@/lib/plan-limits";
 
 async function getClientForOrg(slug: string, organizationId: string) {
   return prisma.client.findFirst({
@@ -147,6 +148,32 @@ export async function POST(
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    const existingReviewer = await prisma.clientReviewer.findUnique({
+      where: {
+        organizationId_email: {
+          organizationId: organization.id,
+          email: normalizedEmail,
+        },
+      },
+      include: { invites: { where: { status: "active" }, take: 1 } },
+    });
+    const activeReviewerCount = await prisma.clientReviewer.count({
+      where: {
+        organizationId: organization.id,
+        invites: { some: { status: "active" } },
+      },
+    });
+    const reviewerAlreadyActive = Boolean(existingReviewer?.invites.length);
+    if (
+      !reviewerAlreadyActive &&
+      !planAllows(organization.plan, "reviewers", activeReviewerCount)
+    ) {
+      return NextResponse.json(
+        planLimitResponse(organization.plan, "reviewers", activeReviewerCount),
+        { status: 403 }
+      );
+    }
 
     const reviewer = await prisma.clientReviewer.upsert({
       where: {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireOrganization } from "@/lib/auth";
 import { z } from "zod";
+import { planAllows, planLimitResponse } from "@/lib/plan-limits";
 
 const inviteSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -70,6 +71,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Este usuário já faz parte da organização" },
         { status: 400 }
+      );
+    }
+
+    const memberCount = await prisma.membership.count({
+      where: { organizationId: organization.id },
+    });
+    if (!planAllows(organization.plan, "members", memberCount)) {
+      return NextResponse.json(
+        planLimitResponse(organization.plan, "members", memberCount),
+        { status: 403 }
       );
     }
 
