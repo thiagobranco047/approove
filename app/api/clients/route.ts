@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrganization } from "@/lib/auth";
 import { findAgencyShareToken } from "@/lib/share-access";
 import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
+import { planAllows, planLimitResponse } from "@/lib/plan-limits";
 
 export async function GET() {
   try {
@@ -92,6 +93,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Slug já existe" },
         { status: 400 }
+      );
+    }
+
+    const clientCount = await prisma.client.count({
+      where: { organizationId: organization.id },
+    });
+    if (!planAllows(organization.plan, "clients", clientCount)) {
+      return NextResponse.json(
+        planLimitResponse(organization.plan, "clients", clientCount),
+        { status: 403 }
       );
     }
 
