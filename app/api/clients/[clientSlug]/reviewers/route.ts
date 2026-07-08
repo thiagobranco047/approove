@@ -192,10 +192,18 @@ export async function POST(
       },
     });
 
-    await prisma.clientReviewerClient.createMany({
-      data: clientIds.map((clientId: string) => ({ reviewerId: reviewer.id, clientId })),
-      skipDuplicates: true,
+    const existingLinks = await prisma.clientReviewerClient.findMany({
+      where: { reviewerId: reviewer.id, clientId: { in: clientIds } },
+      select: { clientId: true },
     });
+    const linkedClientIds = new Set(existingLinks.map((link) => link.clientId));
+    const newLinks = clientIds
+      .filter((clientId: string) => !linkedClientIds.has(clientId))
+      .map((clientId: string) => ({ reviewerId: reviewer.id, clientId }));
+
+    if (newLinks.length > 0) {
+      await prisma.clientReviewerClient.createMany({ data: newLinks });
+    }
 
     const shareToken = await prisma.shareToken.create({
       data: {

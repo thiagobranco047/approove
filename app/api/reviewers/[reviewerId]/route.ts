@@ -52,7 +52,6 @@ export async function PATCH(
 
       await prisma.clientReviewerClient.createMany({
         data: clientIds.map((clientId) => ({ reviewerId, clientId })),
-        skipDuplicates: true,
       });
     }
 

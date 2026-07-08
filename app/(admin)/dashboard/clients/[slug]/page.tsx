@@ -999,7 +999,6 @@ export default function ClientDetailPage() {
     </div>
   );
 }
-
 function SimpleCalendar({
   dates,
   posts,
@@ -1155,3 +1154,4 @@ function SimpleCalendar({
     </div>
   );
 }
+

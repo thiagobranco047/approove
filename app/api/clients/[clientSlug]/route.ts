@@ -65,6 +65,12 @@ export async function GET(
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
     }
+    if (error instanceof Error && error.message === "No organization") {
+      return NextResponse.json(
+        { error: "Nenhuma organização vinculada à sua conta" },
+        { status: 403 }
+      );
+    }
     if (isDatabaseUnavailable(error)) {
       const { json, status } = databaseUnavailableResponse();
       return NextResponse.json(json, { status });

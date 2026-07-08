@@ -1,9 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,12 +16,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -172,13 +173,13 @@ model PostItem {
   calendarVersionId String
   scheduledAt       DateTime
   channel           String
-  copyText          String   @db.Text
+  copyText          String
   status            String   @default("pending") // pending, approved, adjustments (cliente)
   productionStage   String   @default("draft_copy") // draft_copy, waiting_design, internal_review, ready_for_client
   assigneeId        String?
   assignedAt        DateTime?
   assignedById      String?
-  handoffNote       String?  @db.Text
+  handoffNote       String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -243,7 +244,7 @@ model AnnotationPin {
   attachmentSlideId   String?
   xPercent            Float
   yPercent            Float
-  text                String   @db.Text
+  text                String
   author              String   // "agency", "client"
   authorName          String?
   reviewerId          String?
@@ -265,7 +266,7 @@ model Comment {
   author     String
   authorName String?
   reviewerId String?
-  text       String   @db.Text
+  text       String
   createdAt  DateTime @default(now())
 
   postItem PostItem        @relation(fields: [postItemId], references: [id], onDelete: Cascade)

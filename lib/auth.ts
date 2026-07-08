@@ -29,6 +29,15 @@ export async function getUserOrganization(userId: string) {
 export async function requireOrganization() {
   const user = await requireAuth();
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { id: true },
+  });
+
+  if (!dbUser) {
+    throw new Error("Unauthorized");
+  }
+
   const membership = await getUserOrganization(user.id);
 
   if (!membership) {
