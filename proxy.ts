@@ -12,7 +12,7 @@ export async function proxy(req: NextRequest) {
 
   const isLoggedIn = !!token;
 
-  const authRoutes = ["/login", "/signup"];
+  const authRoutes = ["/login", "/signup", "/forgot-password"];
   const isAuthRoute = authRoutes.includes(pathname);
 
   if (isAuthRoute && isLoggedIn) {
@@ -34,5 +34,11 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/onboarding", "/login", "/signup"],
+  matcher: [
+    "/dashboard/:path*",
+    "/onboarding",
+    "/login",
+    "/signup",
+    "/forgot-password",
+  ],
 };

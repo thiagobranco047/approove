@@ -46,6 +46,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 // ─── Core Models ───
 
 model User {
@@ -65,6 +78,7 @@ model User {
   sentInvites ClientInvite[]
   assignedPosts PostItem[] @relation("PostAssignee")
   postsHandedOff PostItem[] @relation("PostHandedOffBy")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Organization {
