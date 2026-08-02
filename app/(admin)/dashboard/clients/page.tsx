@@ -6,7 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, ExternalLink, Search, Users, AlertTriangle, RefreshCw } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Plus,
+  ExternalLink,
+  Search,
+  Users,
+  AlertTriangle,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
+
+const DELETE_CONFIRMATION_WORD = "DELETAR";
 
 interface ClientData {
   id: string;
@@ -32,6 +51,10 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -65,6 +88,54 @@ export default function ClientsPage() {
       : `/c/${client.slug}/${version}`;
     window.open(url, "_blank");
   };
+
+  const openDeleteDialog = (client: ClientData) => {
+    setClientToDelete(client);
+    setDeleteConfirmation("");
+    setDeleteError(null);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setClientToDelete(null);
+    setDeleteConfirmation("");
+    setDeleteError(null);
+  };
+
+  const handleDeleteClient = async () => {
+    if (!clientToDelete || deleteConfirmation !== DELETE_CONFIRMATION_WORD) {
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const response = await fetch(`/api/clients/${clientToDelete.slug}`, {
+        method: "DELETE",
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setDeleteError(
+          typeof data.error === "string"
+            ? data.error
+            : "Erro ao deletar cliente. Tente novamente."
+        );
+        return;
+      }
+
+      setClients((prev) => prev.filter((c) => c.id !== clientToDelete.id));
+      setClientToDelete(null);
+      setDeleteConfirmation("");
+    } catch {
+      setDeleteError("Erro de conexão. Verifique sua rede e tente novamente.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const canConfirmDelete = deleteConfirmation === DELETE_CONFIRMATION_WORD;
 
   const filteredClients = clients.filter(
     (c) =>
@@ -167,15 +238,32 @@ export default function ClientsPage() {
                         /{client.slug}
                       </p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 flex-shrink-0"
-                      title="Abrir calendário (visão do cliente)"
-                      onClick={(e) => { e.stopPropagation(); openClientPage(client); }}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        title="Abrir calendário (visão do cliente)"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openClientPage(client);
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        title="Deletar cliente"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDeleteDialog(client);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="mb-3">
@@ -263,6 +351,68 @@ export default function ClientsPage() {
           })}
         </div>
       )}
+
+      <Dialog
+        open={!!clientToDelete}
+        onOpenChange={(open) => {
+          if (!open) closeDeleteDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deletar cliente</DialogTitle>
+            <DialogDescription>
+              Esta ação é permanente e remove o cliente{" "}
+              <span className="font-medium text-foreground">
+                {clientToDelete?.name}
+              </span>
+              , incluindo publicações, artes e revisores vinculados. Para
+              confirmar, digite{" "}
+              <span className="font-semibold text-foreground">
+                {DELETE_CONFIRMATION_WORD}
+              </span>{" "}
+              abaixo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="delete-confirmation">Confirmação</Label>
+            <Input
+              id="delete-confirmation"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder={DELETE_CONFIRMATION_WORD}
+              autoComplete="off"
+              disabled={deleting}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canConfirmDelete && !deleting) {
+                  handleDeleteClient();
+                }
+              }}
+            />
+            {deleteError && (
+              <p className="text-sm text-destructive">{deleteError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeDeleteDialog}
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteClient}
+              disabled={!canConfirmDelete || deleting}
+            >
+              {deleting ? "Deletando..." : "Deletar cliente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

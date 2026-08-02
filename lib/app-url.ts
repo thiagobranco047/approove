@@ -1,8 +1,13 @@
 /**
  * Base URL pública da aplicação (e-mails, links absolutos).
- * Preferência: NEXTAUTH_URL → VERCEL_URL → localhost.
+ * Preferência: APP_URL → NEXTAUTH_URL → VERCEL_URL → localhost.
  */
 export function getAppBaseUrl(): string {
+  const appUrl = process.env.APP_URL?.trim();
+  if (appUrl) {
+    return appUrl.replace(/\/$/, "");
+  }
+
   const fromEnv = process.env.NEXTAUTH_URL?.trim();
   if (fromEnv) {
     return fromEnv.replace(/\/$/, "");

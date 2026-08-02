@@ -11,6 +11,7 @@ interface HeaderProps {
   onStatusChange: (status: PostStatus) => void;
   onCalendarClick?: () => void;
   canApprove?: boolean;
+  showStatus?: boolean;
   reviewerName?: string | null;
 }
 
@@ -20,6 +21,7 @@ export function Header({
   onStatusChange,
   onCalendarClick,
   canApprove = true,
+  showStatus = true,
   reviewerName,
 }: HeaderProps) {
   const getStatusColor = (status: PostStatus) => {
@@ -54,47 +56,50 @@ export function Header({
           
           <div className="w-px h-8 bg-border mx-2"></div>
 
-          {canApprove ? (
-          <>
-          <Button
-            size="sm"
-            variant={currentStatus === "pending" ? "default" : "outline"}
-            className={currentStatus === "pending" ? getStatusColor("pending") : ""}
-            onClick={() => onStatusChange("pending")}
-            data-status="pending"
-            data-action="change-status"
-          >
-            Pendente
-          </Button>
-          <Button
-            size="sm"
-            variant={currentStatus === "approved" ? "default" : "outline"}
-            className={currentStatus === "approved" ? getStatusColor("approved") : ""}
-            onClick={() => onStatusChange("approved")}
-            data-status="approved"
-            data-action="change-status"
-          >
-            Aprovado
-          </Button>
-          <Button
-            size="sm"
-            variant={currentStatus === "adjustments" ? "default" : "outline"}
-            className={
-              currentStatus === "adjustments" ? getStatusColor("adjustments") : ""
-            }
-            onClick={() => onStatusChange("adjustments")}
-            data-status="adjustments"
-            data-action="change-status"
-          >
-            Ajustes
-          </Button>
-          </>
-          ) : (
-            <span className="text-xs text-muted-foreground px-2">Somente visualização</span>
-          )}
+          {showStatus &&
+            (canApprove ? (
+              <>
+                <Button
+                  size="sm"
+                  variant={currentStatus === "pending" ? "default" : "outline"}
+                  className={currentStatus === "pending" ? getStatusColor("pending") : ""}
+                  onClick={() => onStatusChange("pending")}
+                  data-status="pending"
+                  data-action="change-status"
+                >
+                  Pendente
+                </Button>
+                <Button
+                  size="sm"
+                  variant={currentStatus === "approved" ? "default" : "outline"}
+                  className={currentStatus === "approved" ? getStatusColor("approved") : ""}
+                  onClick={() => onStatusChange("approved")}
+                  data-status="approved"
+                  data-action="change-status"
+                >
+                  Aprovado
+                </Button>
+                <Button
+                  size="sm"
+                  variant={currentStatus === "adjustments" ? "default" : "outline"}
+                  className={
+                    currentStatus === "adjustments" ? getStatusColor("adjustments") : ""
+                  }
+                  onClick={() => onStatusChange("adjustments")}
+                  data-status="adjustments"
+                  data-action="change-status"
+                >
+                  Ajustes
+                </Button>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground px-2">
+                Somente visualização
+              </span>
+            ))}
 
           {/* Calendar Button with left margin */}
-          <div className="ml-4 pl-4 border-l">
+          <div className={showStatus ? "ml-4 pl-4 border-l" : ""}>
             <Button
               size="sm"
               variant="outline"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
@@ -110,8 +111,18 @@ export function PostSlideEditable({
   const [editData, setEditData] = useState({
     scheduledAt: post.scheduledAt,
     channel: post.channel,
+    title: post.title ?? "",
     copyText: post.copyText,
   });
+
+  useEffect(() => {
+    setEditData({
+      scheduledAt: post.scheduledAt,
+      channel: post.channel,
+      title: post.title ?? "",
+      copyText: post.copyText,
+    });
+  }, [post.id, post.scheduledAt, post.channel, post.title, post.copyText]);
 
   const attachments = post.attachments || [];
   const safeAttachmentIndex = attachments.length
@@ -151,6 +162,7 @@ export function PostSlideEditable({
     setEditData({
       scheduledAt: post.scheduledAt,
       channel: post.channel,
+      title: post.title ?? "",
       copyText: post.copyText,
     });
     setEditing(false);
@@ -604,9 +616,31 @@ export function PostSlideEditable({
             )}
         </div>
 
-        {/* Right: Copy and Comments */}
-        <div className="flex flex-col gap-4 h-full" data-section="copy-comments-container">
-          <div className="h-1/2 flex flex-col" data-section="copy-section">
+        {/* Right: Title, Copy and Comments */}
+        <div className="flex flex-col gap-4 h-full min-h-0" data-section="copy-comments-container">
+          <div className="shrink-0" data-section="title-section">
+            <Card>
+              <CardHeader className="pb-2 pt-4">
+                <CardTitle className="text-sm font-medium">Título</CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                {editing ? (
+                  <Input
+                    value={editData.title}
+                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                    placeholder="Tema do post (ex.: Lançamento coleção verão)"
+                    className="font-semibold"
+                  />
+                ) : post.title?.trim() ? (
+                  <p className="text-base font-semibold leading-snug">{post.title}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sem título</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex-1 min-h-0 flex flex-col" data-section="copy-section">
             <Card className="h-full flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-medium">Copy</CardTitle>
@@ -622,7 +656,7 @@ export function PostSlideEditable({
                   <textarea
                     value={editData.copyText}
                     onChange={(e) => setEditData({ ...editData, copyText: e.target.value })}
-                    className="w-full h-full min-h-[200px] px-3 py-2 text-sm border rounded-md bg-background resize-none"
+                    className="w-full h-full min-h-[120px] px-3 py-2 text-sm border rounded-md bg-background resize-none"
                     placeholder="Digite o texto do post..."
                   />
                 ) : (
@@ -632,7 +666,7 @@ export function PostSlideEditable({
             </Card>
           </div>
 
-          <div className="h-1/2 overflow-hidden" data-section="comments-section">
+          <div className="flex-1 min-h-0 overflow-hidden" data-section="comments-section">
             <CommentThread
               comments={post.comments}
               onAddComment={(text) => onCommentAdd(post.id, text)}

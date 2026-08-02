@@ -187,6 +187,7 @@ model PostItem {
   calendarVersionId String
   scheduledAt       DateTime
   channel           String
+  title             String   @default("")
   copyText          String
   status            String   @default("pending") // pending, approved, adjustments (cliente)
   productionStage   String   @default("draft_copy") // draft_copy, waiting_design, internal_review, ready_for_client
