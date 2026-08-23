@@ -1,26 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
-import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Keyboard } from "swiper/modules";
-import type { Swiper as SwiperType } from "swiper";
-import { Calendar, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { addDays, subDays, startOfDay, isSameDay } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PostSlide, type Post, type PostStatus } from "@/components/post-slide";
 import { PostSlideEditable } from "@/components/post-slide-editable";
 import { CalendarModal } from "@/components/calendar-modal";
+import { CalendarView } from "@/components/calendar-view";
+import { EmptyDaySlide } from "@/components/empty-day-slide";
 import { Header } from "@/components/header";
 import { PostHandoffDialog } from "@/components/post-handoff-dialog";
-
-import "swiper/css";
-import "swiper/css/navigation";
 
 export default function CalendarPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get("t");
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -28,7 +22,8 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [currentPostIndex, setCurrentPostIndex] = useState(0);
+  const [viewDate, setViewDate] = useState<Date | null>(null);
+  const [dayPostIndex, setDayPostIndex] = useState(0);
   const [clientName, setClientName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [reviewerName, setReviewerName] = useState<string | null>(null);
@@ -41,7 +36,6 @@ export default function CalendarPage() {
     Array<{ user: { id: string; name: string | null; email: string } }>
   >([]);
   const [handoffPost, setHandoffPost] = useState<Post | null>(null);
-  const swiperRef = useRef<SwiperType | null>(null);
 
   const fetchPosts = useCallback(async () => {
     const url = token
@@ -56,7 +50,7 @@ export default function CalendarPage() {
     }
 
     const data = await response.json();
-    setPosts(data.posts);
+    const loadedPosts: Post[] = data.posts ?? [];
 
     if (data.isAdmin) {
       setIsAdmin(true);
@@ -76,9 +70,13 @@ export default function CalendarPage() {
         .join(" ")
     );
 
-    if (data.posts.length > 0) {
-      setCurrentMonth(new Date(data.posts[0].scheduledAt));
+    if (loadedPosts.length > 0) {
+      setCurrentMonth(new Date(loadedPosts[0].scheduledAt));
+      setViewDate((prev) => prev ?? startOfDay(new Date(loadedPosts[0].scheduledAt)));
+      setDayPostIndex(0);
     }
+
+    setPosts(loadedPosts);
   }, [token, params.clientSlug, params.versionId]);
 
   useEffect(() => {
@@ -171,49 +169,58 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDayClick = async (postIndex: number, date?: Date) => {
-    if (isAdmin && postIndex === -1 && date) {
-      try {
-        const response = await fetch(
-          `/api/calendar/${params.clientSlug}/${params.versionId}/posts/create`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              scheduledAt: date.toISOString(),
-              channel: "Instagram",
-              copyText: "",
-            }),
-          }
-        );
+  const insertPostAndFocus = useCallback((post: Post) => {
+    const postDay = startOfDay(new Date(post.scheduledAt));
+    setPosts((prev) => {
+      const updated = [...prev, post].sort(
+        (a, b) =>
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+      );
+      const postsOnDay = updated.filter((p) =>
+        isSameDay(new Date(p.scheduledAt), postDay)
+      );
+      const indexInDay = postsOnDay.findIndex((p) => p.id === post.id);
+      setViewDate(postDay);
+      setCurrentMonth(postDay);
+      setDayPostIndex(indexInDay >= 0 ? indexInDay : 0);
+      return updated;
+    });
+  }, []);
 
-        if (!response.ok) {
-          throw new Error("Erro ao criar post");
+  const createPostOnDate = useCallback(
+    async (date: Date) => {
+      const scheduledAt = startOfDay(date);
+      const response = await fetch(
+        `/api/calendar/${params.clientSlug}/${params.versionId}/posts/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scheduledAt: scheduledAt.toISOString(),
+            channel: "Instagram",
+            copyText: "",
+          }),
         }
+      );
 
-        const data = await response.json();
-        setPosts((prev) => {
-          const updated = [...prev, data.post].sort((a, b) =>
-            new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-          );
-          setTimeout(() => {
-            if (swiperRef.current) {
-              const newIndex = updated.findIndex((p) => p.id === data.post.id);
-              swiperRef.current.slideTo(newIndex >= 0 ? newIndex : updated.length - 1, 0);
-            }
-          }, 100);
-          return updated;
-        });
-      } catch (err) {
-        console.error("Error creating post:", err);
-        alert("Erro ao criar post");
+      if (!response.ok) {
+        throw new Error("Erro ao criar post");
       }
-    } else if (postIndex >= 0) {
-      if (swiperRef.current) {
-        swiperRef.current.slideTo(postIndex, 0);
+
+      const data = await response.json();
+      if (data.post) {
+        insertPostAndFocus(data.post);
       }
-    }
-  };
+    },
+    [params.clientSlug, params.versionId, insertPostAndFocus]
+  );
+
+  const selectDay = useCallback((date: Date) => {
+    const day = startOfDay(date);
+    setViewDate(day);
+    setCurrentMonth(day);
+    setDayPostIndex(0);
+  }, []);
 
   const handleHandoffSuccess = () => {
     void fetchPosts();
@@ -256,11 +263,28 @@ export default function CalendarPage() {
         throw new Error("Erro ao deletar post");
       }
 
-      setPosts((prev) => prev.filter((post) => post.id !== postId));
-      
-      if (swiperRef.current && currentPostIndex > 0) {
-        swiperRef.current.slideTo(currentPostIndex - 1, 0);
-      }
+      setPosts((prev) => {
+        const updated = prev.filter((post) => post.id !== postId);
+        if (updated.length === 0) {
+          setViewDate(null);
+          setDayPostIndex(0);
+          return updated;
+        }
+
+        if (viewDate) {
+          const remainingOnDay = updated.filter((p) =>
+            isSameDay(new Date(p.scheduledAt), viewDate)
+          );
+          if (remainingOnDay.length === 0) {
+            setDayPostIndex(0);
+          } else {
+            setDayPostIndex((idx) =>
+              Math.min(idx, remainingOnDay.length - 1)
+            );
+          }
+        }
+        return updated;
+      });
     } catch (err) {
       console.error("Error deleting post:", err);
       alert("Erro ao deletar post");
@@ -269,36 +293,7 @@ export default function CalendarPage() {
 
   const handleAddPostToDay = async (date: Date) => {
     try {
-      const response = await fetch(
-        `/api/calendar/${params.clientSlug}/${params.versionId}/posts/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            scheduledAt: date.toISOString(),
-            channel: "Instagram",
-            copyText: "",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Erro ao criar post");
-      }
-
-      const data = await response.json();
-      setPosts((prev) => {
-        const updated = [...prev, data.post].sort((a, b) =>
-          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-        );
-        setTimeout(() => {
-          if (swiperRef.current) {
-            const newIndex = updated.findIndex((p) => p.id === data.post.id);
-            swiperRef.current.slideTo(newIndex >= 0 ? newIndex : updated.length - 1, 0);
-          }
-        }, 100);
-        return updated;
-      });
+      await createPostOnDate(date);
     } catch (err) {
       console.error("Error creating post:", err);
       alert("Erro ao criar post");
@@ -536,43 +531,94 @@ export default function CalendarPage() {
     );
   };
 
-  const handleAddPost = async () => {
-    try {
-      const response = await fetch(
-        `/api/calendar/${params.clientSlug}/${params.versionId}/posts/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            scheduledAt: new Date().toISOString(),
-            channel: "Instagram",
-            copyText: "Novo post",
-          }),
-        }
-      );
+  const openCalendarForDate = useCallback((date: Date) => {
+    setCurrentMonth(date);
+    setCalendarOpen(true);
+  }, []);
 
-      if (!response.ok) {
-        throw new Error("Erro ao criar post");
+  const navigateDays = useCallback(
+    (direction: "prev" | "next") => {
+      if (!viewDate) return;
+
+      const postsOnDay = posts
+        .filter((p) => isSameDay(new Date(p.scheduledAt), viewDate))
+        .sort(
+          (a, b) =>
+            new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+        );
+
+      if (direction === "next" && dayPostIndex < postsOnDay.length - 1) {
+        setDayPostIndex(dayPostIndex + 1);
+        return;
       }
 
-      const data = await response.json();
-      setPosts((prev) => {
-        const updated = [...prev, data.post].sort((a, b) =>
-          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+      if (direction === "prev" && dayPostIndex > 0) {
+        setDayPostIndex(dayPostIndex - 1);
+        return;
+      }
+
+      const nextDate =
+        direction === "next" ? addDays(viewDate, 1) : subDays(viewDate, 1);
+      const postsOnNext = posts
+        .filter((p) => isSameDay(new Date(p.scheduledAt), nextDate))
+        .sort(
+          (a, b) =>
+            new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
         );
-        setTimeout(() => {
-          if (swiperRef.current) {
-            const newIndex = updated.findIndex((p) => p.id === data.post.id);
-            swiperRef.current.slideTo(newIndex >= 0 ? newIndex : updated.length - 1, 0);
-          }
-        }, 100);
-        return updated;
-      });
-    } catch (err) {
-      console.error("Error creating post:", err);
-      alert("Erro ao criar post");
-    }
-  };
+
+      setViewDate(nextDate);
+      setCurrentMonth(nextDate);
+      setDayPostIndex(
+        direction === "next"
+          ? 0
+          : Math.max(0, postsOnNext.length - 1)
+      );
+    },
+    [viewDate, posts, dayPostIndex]
+  );
+
+  useEffect(() => {
+    if (!viewDate) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        navigateDays("prev");
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        navigateDays("next");
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [viewDate, navigateDays]);
+
+  const postsOnViewDate = useMemo(() => {
+    if (!viewDate) return [];
+    return posts
+      .filter((p) => isSameDay(new Date(p.scheduledAt), viewDate))
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+      );
+  }, [posts, viewDate]);
+
+  const currentPost =
+    postsOnViewDate[
+      Math.min(dayPostIndex, Math.max(postsOnViewDate.length - 1, 0))
+    ] ?? null;
+  const inDayView = viewDate !== null;
 
   if (loading) {
     return (
@@ -597,139 +643,130 @@ export default function CalendarPage() {
     );
   }
 
-  if (posts.length === 0) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Nenhum post encontrado</h1>
-          <p className="text-muted-foreground">
-            Este calendário ainda não possui posts.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const currentPost = posts[currentPostIndex];
-
   return (
     <>
-      {/* Header */}
       <Header
         clientName={clientName}
         currentStatus={currentPost?.status || "pending"}
         onStatusChange={(status) =>
           currentPost && handleStatusChange(currentPost.id, status)
         }
-        onCalendarClick={() => setCalendarOpen(true)}
+        onCalendarClick={() =>
+          openCalendarForDate(viewDate ?? currentMonth)
+        }
         canApprove={isAdmin || permissions.canApprove}
+        showStatus={Boolean(currentPost)}
         reviewerName={!isAdmin ? reviewerName : null}
       />
 
-      {/* Navigation Arrows - aligned with date bar center */}
-      <button 
-        className="swiper-button-prev-custom fixed z-30 flex items-center justify-center w-10 h-10 rounded-full bg-background border hover:bg-accent transition-colors cursor-pointer" 
-        style={{ left: '24px', top: '75px' }}
-        data-action="prev-slide"
-        id="nav-arrow-prev"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+      {inDayView && viewDate ? (
+        <>
+          <button
+            type="button"
+            className="fixed z-30 flex items-center justify-center w-10 h-10 rounded-full bg-background border hover:bg-accent transition-colors cursor-pointer"
+            style={{ left: "24px", top: "75px" }}
+            data-action="prev-slide"
+            id="nav-arrow-prev"
+            title="Dia anterior"
+            onClick={() => navigateDays("prev")}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-      <button 
-        className="swiper-button-next-custom fixed z-30 flex items-center justify-center w-10 h-10 rounded-full bg-background border hover:bg-accent transition-colors cursor-pointer" 
-        style={{ right: '24px', top: '75px' }}
-        data-action="next-slide"
-        id="nav-arrow-next"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+          <button
+            type="button"
+            className="fixed z-30 flex items-center justify-center w-10 h-10 rounded-full bg-background border hover:bg-accent transition-colors cursor-pointer"
+            style={{ right: "24px", top: "75px" }}
+            data-action="next-slide"
+            id="nav-arrow-next"
+            title="Próximo dia"
+            onClick={() => navigateDays("next")}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
 
+          {currentPost ? (
+            isAdmin ? (
+              <PostSlideEditable
+                post={currentPost}
+                clientName={clientName}
+                isAdmin={isAdmin}
+                onCommentAdd={handleCommentAdd}
+                onPostUpdate={handlePostUpdate}
+                onPostDelete={handlePostDelete}
+                onAddPostToDay={handleAddPostToDay}
+                onAttachmentAdd={handleAttachmentAdd}
+                onAttachmentVersionAdd={handleAttachmentVersionAdd}
+                onAttachmentVersionUpdate={handleAttachmentVersionUpdate}
+                onPinCreate={handlePinCreate}
+                onPinResolve={handlePinResolve}
+                onPinDelete={handlePinDelete}
+                onDelegate={setHandoffPost}
+                dayPostIndex={dayPostIndex + 1}
+                dayPostCount={postsOnViewDate.length}
+              />
+            ) : (
+              <PostSlide
+                post={currentPost}
+                clientName={clientName}
+                onCommentAdd={handleCommentAdd}
+                onPinCreate={permissions.canPin ? handlePinCreate : undefined}
+                onPinResolve={permissions.canPin ? handlePinResolve : undefined}
+                onPinDelete={permissions.canPin ? handlePinDelete : undefined}
+                canComment={permissions.canComment}
+                canAnnotate={permissions.canPin}
+                dayPostIndex={dayPostIndex + 1}
+                dayPostCount={postsOnViewDate.length}
+              />
+            )
+          ) : (
+            <EmptyDaySlide
+              date={viewDate}
+              isAdmin={isAdmin}
+              onAddPost={
+                isAdmin
+                  ? () => {
+                      void handleAddPostToDay(viewDate);
+                    }
+                  : undefined
+              }
+            />
+          )}
+        </>
+      ) : (
+        <div className="min-h-screen w-full flex items-start justify-center px-4 pt-24 pb-10">
+          <CalendarView
+            className="w-full max-w-3xl"
+            posts={posts}
+            onSelectDay={selectDay}
+            currentMonth={currentMonth}
+            isAdmin={isAdmin}
+            title={isAdmin ? "Escolha uma data" : "Nenhuma publicação ainda"}
+            subtitle={
+              isAdmin
+                ? "Clique em um dia para abrir o calendário. Você cria a publicação quando quiser com “+ Novo post”."
+                : "Este calendário ainda não possui publicações para revisar."
+            }
+          />
+        </div>
+      )}
 
-      {/* Swiper */}
-      <Swiper
-        modules={[Navigation, Keyboard]}
-        navigation={{
-          prevEl: '.swiper-button-prev-custom',
-          nextEl: '.swiper-button-next-custom',
-        }}
-        keyboard={{ enabled: true }}
-        mousewheel={false}
-        allowTouchMove={true}
-        spaceBetween={0}
-        slidesPerView={1}
-        onSwiper={(swiper) => {
-          swiperRef.current = swiper;
-        }}
-        onSlideChange={(swiper) => {
-          setCurrentPostIndex(swiper.activeIndex);
-          // Update current month when slide changes
-          if (posts[swiper.activeIndex]) {
-            setCurrentMonth(new Date(posts[swiper.activeIndex].scheduledAt));
-          }
-        }}
-        className="w-full h-screen"
-        id="posts-swiper"
-        data-component="swiper"
-      >
-        {posts.map((post) => {
-          const postDate = new Date(post.scheduledAt).toISOString().split("T")[0];
-          const sameDayPosts = posts.filter(
-            (p) => new Date(p.scheduledAt).toISOString().split("T")[0] === postDate
-          );
-          const dayPostCount = sameDayPosts.length;
-          const dayPostIndex = sameDayPosts.findIndex((p) => p.id === post.id) + 1;
-
-          return (
-            <SwiperSlide key={post.id}>
-              {isAdmin ? (
-                <PostSlideEditable
-                  post={post}
-                  clientName={clientName}
-                  isAdmin={isAdmin}
-                  onCommentAdd={handleCommentAdd}
-                  onPostUpdate={handlePostUpdate}
-                  onPostDelete={handlePostDelete}
-                  onAddPostToDay={handleAddPostToDay}
-                  onAttachmentAdd={handleAttachmentAdd}
-                  onAttachmentVersionAdd={handleAttachmentVersionAdd}
-                  onAttachmentVersionUpdate={handleAttachmentVersionUpdate}
-                  onPinCreate={handlePinCreate}
-                  onPinResolve={handlePinResolve}
-                  onPinDelete={handlePinDelete}
-                  onDelegate={setHandoffPost}
-                  dayPostIndex={dayPostIndex}
-                  dayPostCount={dayPostCount}
-                />
-              ) : (
-                <PostSlide
-                  post={post}
-                  clientName={clientName}
-                  onCommentAdd={handleCommentAdd}
-                  onPinCreate={permissions.canPin ? handlePinCreate : undefined}
-                  onPinResolve={permissions.canPin ? handlePinResolve : undefined}
-                  onPinDelete={permissions.canPin ? handlePinDelete : undefined}
-                  canComment={permissions.canComment}
-                  canAnnotate={permissions.canPin}
-                  dayPostIndex={dayPostIndex}
-                  dayPostCount={dayPostCount}
-                />
-              )}
-            </SwiperSlide>
-          );
-        })}
-      </Swiper>
-
-      {/* Calendar Modal */}
       <CalendarModal
         open={calendarOpen}
         onOpenChange={setCalendarOpen}
         posts={posts}
-        onDayClick={handleDayClick}
+        onSelectDay={selectDay}
+        onCreateOnDay={
+          isAdmin
+            ? (date) => {
+                void handleAddPostToDay(date);
+              }
+            : undefined
+        }
         currentMonth={currentMonth}
         isAdmin={isAdmin}
       />

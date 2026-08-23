@@ -77,6 +77,7 @@ export interface Post {
   id: string;
   scheduledAt: string;
   channel: string;
+  title?: string;
   copyText: string;
   status: PostStatus;
   comments: Comment[];
@@ -300,9 +301,24 @@ export function PostSlide({
           )}
         </div>
 
-        {/* Right: Copy and Comments */}
-        <div className="flex flex-col gap-4 h-full" data-section="copy-comments-container">
-          <div className="h-1/2 flex flex-col" data-section="copy-section">
+        {/* Right: Title, Copy and Comments */}
+        <div className="flex flex-col gap-4 h-full min-h-0" data-section="copy-comments-container">
+          <div className="shrink-0" data-section="title-section">
+            <Card>
+              <CardHeader className="pb-2 pt-4">
+                <CardTitle className="text-sm font-medium">Título</CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                {post.title?.trim() ? (
+                  <p className="text-base font-semibold leading-snug">{post.title}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sem título</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex-1 min-h-0 flex flex-col" data-section="copy-section">
             <Card className="h-full flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-medium">Copy</CardTitle>
@@ -322,7 +338,7 @@ export function PostSlide({
             </Card>
           </div>
 
-          <div className="h-1/2 overflow-hidden" data-section="comments-section">
+          <div className="flex-1 min-h-0 overflow-hidden" data-section="comments-section">
             <CommentThread
               comments={post.comments}
               onAddComment={(text) => onCommentAdd(post.id, text)}

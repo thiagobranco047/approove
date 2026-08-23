@@ -4,7 +4,7 @@ export type LimitedResource = "clients" | "members" | "reviewers";
 type PlanLimits = Record<LimitedResource, number | null>;
 
 export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
-  free: { clients: 1, members: 1, reviewers: 3 },
+  free: { clients: 3, members: 3, reviewers: 10 },
   starter: { clients: 5, members: 2, reviewers: 10 },
   pro: { clients: 15, members: 5, reviewers: null },
   studio: { clients: 40, members: 15, reviewers: null },

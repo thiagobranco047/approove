@@ -9,6 +9,7 @@ import { attachmentVersionInclude } from "@/lib/attachment-slides";
 const updatePostSchema = z.object({
   scheduledAt: z.string().optional(),
   channel: z.string().optional(),
+  title: z.string().optional(),
   copyText: z.string().optional(),
   productionStage: z.string().optional(),
   assigneeId: z.string().nullable().optional(),
@@ -67,6 +68,7 @@ export async function PATCH(
       data: {
         ...(data.scheduledAt && { scheduledAt: new Date(data.scheduledAt) }),
         ...(data.channel && { channel: data.channel }),
+        ...(data.title !== undefined && { title: data.title.trim() }),
         ...(data.copyText !== undefined && { copyText: data.copyText }),
         ...(data.productionStage && { productionStage: data.productionStage }),
         ...(data.assigneeId !== undefined && { assigneeId: data.assigneeId }),

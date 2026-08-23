@@ -3,9 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { requireOrganization } from "@/lib/auth";
 import { z } from "zod";
 import { planAllows, planLimitResponse } from "@/lib/plan-limits";
+import { sendEmail } from "@/lib/email";
+import { buildMemberInviteEmail } from "@/lib/email-templates/member-invite";
 
 const inviteSchema = z.object({
   email: z.string().email("Email inválido"),
+  name: z.string().min(1, "Nome é obrigatório").optional(),
   role: z.enum(["admin", "member"], {
     message: "Função deve ser 'admin' ou 'member'",
   }),
@@ -90,7 +93,12 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       user = await prisma.user.create({
-        data: { email: data.email },
+        data: { email: data.email, name: data.name || null },
+      });
+    } else if (data.name && !user.name) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { name: data.name },
       });
     }
 
@@ -111,6 +119,30 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    const inviter = await prisma.user.findUnique({
+      where: { id: membership.userId },
+      select: { name: true },
+    });
+
+    const emailContent = buildMemberInviteEmail({
+      memberEmail: data.email,
+      memberName: data.name || data.email,
+      organizationName: organization.name,
+      role: data.role,
+      invitedByName: inviter?.name,
+    });
+
+    const emailResult = await sendEmail({
+      to: data.email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text,
+    });
+
+    if (emailResult.skipped) {
+      console.warn("[team] E-mail de convite não enviado (RESEND_API_KEY não configurada)");
+    }
 
     return NextResponse.json({ member: newMembership });
   } catch (error) {

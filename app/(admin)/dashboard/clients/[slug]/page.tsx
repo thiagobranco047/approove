@@ -70,6 +70,7 @@ interface PostData {
   id: string;
   scheduledAt: string;
   channel: string;
+  title?: string;
   copyText: string;
   status: string;
   productionStage: string;
@@ -122,6 +123,7 @@ const STATUS_MAP: Record<string, { label: string; class: string }> = {
 const defaultPostForm = {
   scheduledAt: "",
   channel: "Instagram",
+  title: "",
   copyText: "",
 };
 
@@ -250,6 +252,7 @@ export default function ClientDetailPage() {
     setPostForm({
       scheduledAt: localISO,
       channel: post.channel,
+      title: post.title ?? "",
       copyText: post.copyText,
     });
     setProductionForm({
@@ -308,6 +311,7 @@ export default function ClientDetailPage() {
       const body = {
         scheduledAt: postForm.scheduledAt,
         channel: postForm.channel,
+        title: postForm.title,
         copyText: postForm.copyText,
         productionStage: productionForm.productionStage,
         assigneeId: productionForm.assigneeId || null,
@@ -658,7 +662,10 @@ export default function ClientDetailPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm line-clamp-2">{post.copyText}</p>
+                            <p className="text-sm font-medium truncate">
+                              {post.title?.trim() || "Sem título"}
+                            </p>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{post.copyText}</p>
                           </div>
                           <div className="flex items-start gap-1 flex-shrink-0">
                             <Button
@@ -813,6 +820,15 @@ export default function ClientDetailPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input
+                value={postForm.title}
+                onChange={(e) => setPostForm((p) => ({ ...p, title: e.target.value }))}
+                placeholder="Tema do post (ex.: Lançamento coleção verão)"
+              />
             </div>
 
             <div className="space-y-2">

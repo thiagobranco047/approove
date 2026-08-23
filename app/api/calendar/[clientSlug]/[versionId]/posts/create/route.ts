@@ -9,6 +9,7 @@ import { attachmentVersionInclude } from "@/lib/attachment-slides";
 const createPostSchema = z.object({
   scheduledAt: z.string(),
   channel: z.string().optional(),
+  title: z.string().optional(),
   copyText: z.string().optional(),
   productionStage: z.string().optional(),
   assigneeId: z.string().nullable().optional(),
@@ -68,6 +69,7 @@ export async function POST(
         calendarVersionId: calendarVersion.id,
         scheduledAt: new Date(data.scheduledAt),
         channel: data.channel || "Instagram",
+        title: data.title?.trim() || "",
         copyText: data.copyText || "",
         status: "pending",
         productionStage,

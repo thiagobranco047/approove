@@ -51,12 +51,25 @@ export async function POST(request: NextRequest) {
 
     const blob = await put(pathname, file, {
       access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return NextResponse.json({ url: blob.url });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (
+      error instanceof Error &&
+      error.message.includes("Cannot use public access on a private store")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "O Blob Store está configurado como privado. Acesse vercel.com/dashboard/stores e altere para público, ou crie um novo store com acesso público.",
+        },
+        { status: 503 }
+      );
     }
     console.error("Upload error:", error);
     return NextResponse.json(

@@ -51,6 +51,7 @@ export interface Post {
   id: string;
   scheduledAt: string;
   channel: string;
+  title?: string;
   copyText: string;
   status: PostStatus;
   comments: Comment[];

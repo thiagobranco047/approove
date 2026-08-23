@@ -89,6 +89,7 @@ export default function TeamPage() {
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState("");
@@ -118,7 +119,7 @@ export default function TeamPage() {
       const response = await fetch("/api/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({ email: inviteEmail, name: inviteName, role: inviteRole }),
       });
 
       const data = await response.json();
@@ -131,6 +132,7 @@ export default function TeamPage() {
       setMembers((prev) => [...prev, data.member]);
       setInviteOpen(false);
       setInviteEmail("");
+      setInviteName("");
       setInviteRole("member");
     } catch {
       setError(tr("Erro ao convidar membro", "Unable to invite member"));
@@ -218,6 +220,17 @@ export default function TeamPage() {
 
             <div className="space-y-4 py-2">
               <div className="space-y-2">
+                <Label htmlFor="invite-name">Nome</Label>
+                <Input
+                  id="invite-name"
+                  type="text"
+                  placeholder="Nome do membro"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="invite-email">Email</Label>
                 <Input
                   id="invite-email"
@@ -283,7 +296,7 @@ export default function TeamPage() {
               </Button>
               <Button
                 onClick={handleInvite}
-                disabled={!inviteEmail || inviting}
+                disabled={!inviteEmail || !inviteName || inviting}
               >
                 {inviting ? tr("Convidando...", "Inviting...") : tr("Enviar convite", "Send invitation")}
               </Button>

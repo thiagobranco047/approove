@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { LandingPage } from "@/components/landing-page";
 import { getRequestLocale } from "@/lib/request-locale";
 
@@ -19,11 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [session, locale] = await Promise.all([auth(), getRequestLocale()]);
-
-  if (session) {
-    redirect("/dashboard");
-  }
+  const locale = await getRequestLocale();
 
   return <LandingPage locale={locale} />;
 }
