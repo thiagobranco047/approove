@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "check:prices": "tsx --env-file=.env scripts/check-stripe-prices.ts",
     "db:push": "prisma db push",
     "db:migrate:init": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/init/migration.sql",
     "db:migrate:turso": "tsx --env-file=.env prisma/apply-turso-migration.ts",
