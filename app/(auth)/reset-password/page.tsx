@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 type TokenState = "checking" | "valid" | "invalid";
 
 function ResetPasswordForm() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -39,7 +43,7 @@ function ResetPasswordForm() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("As senhas não coincidem");
+      setError(tr("As senhas não coincidem", "Passwords don’t match"));
       return;
     }
 
@@ -55,14 +59,14 @@ function ResetPasswordForm() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Erro ao redefinir senha. Tente novamente.");
+        setError(data.error ?? tr("Erro ao redefinir senha. Tente novamente.", "Unable to reset password. Please try again."));
         return;
       }
 
       setDone(true);
       setTimeout(() => router.push("/login"), 2000);
     } catch {
-      setError("Erro ao redefinir senha. Tente novamente.");
+      setError(tr("Erro ao redefinir senha. Tente novamente.", "Unable to reset password. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -81,14 +85,13 @@ function ResetPasswordForm() {
       <div className="space-y-6">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight lg:hidden">Approove</h1>
-          <h2 className="text-2xl font-semibold tracking-tight">Link inválido ou expirado</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{tr("Link inválido ou expirado", "Invalid or expired link")}</h2>
           <p className="text-sm text-muted-foreground">
-            Este link de redefinição não é mais válido. Solicite um novo para
-            continuar.
+            {tr("Este link de redefinição não é mais válido. Solicite um novo para continuar.", "This reset link is no longer valid. Request a new one to continue.")}
           </p>
         </div>
         <Button asChild className="w-full h-11">
-          <Link href="/forgot-password">Solicitar novo link</Link>
+          <Link href="/forgot-password">{tr("Solicitar novo link", "Request a new link")}</Link>
         </Button>
       </div>
     );
@@ -99,9 +102,9 @@ function ResetPasswordForm() {
       <div className="space-y-6">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight lg:hidden">Approove</h1>
-          <h2 className="text-2xl font-semibold tracking-tight">Senha redefinida!</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{tr("Senha redefinida!", "Password reset!")}</h2>
           <p className="text-sm text-muted-foreground">
-            Redirecionando para o login...
+            {tr("Redirecionando para o login...", "Redirecting to login...")}
           </p>
         </div>
       </div>
@@ -112,9 +115,9 @@ function ResetPasswordForm() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight lg:hidden">Approove</h1>
-        <h2 className="text-2xl font-semibold tracking-tight">Escolha uma nova senha</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">{tr("Escolha uma nova senha", "Choose a new password")}</h2>
         <p className="text-sm text-muted-foreground">
-          Sua nova senha deve ter pelo menos 6 caracteres.
+          {tr("Sua nova senha deve ter pelo menos 6 caracteres.", "Your new password must be at least 6 characters.")}
         </p>
       </div>
 
@@ -126,7 +129,7 @@ function ResetPasswordForm() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="password">Nova senha</Label>
+          <Label htmlFor="password">{tr("Nova senha", "New password")}</Label>
           <Input
             id="password"
             type="password"
@@ -140,7 +143,7 @@ function ResetPasswordForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+          <Label htmlFor="confirmPassword">{tr("Confirmar nova senha", "Confirm new password")}</Label>
           <Input
             id="confirmPassword"
             type="password"
@@ -157,10 +160,10 @@ function ResetPasswordForm() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Redefinindo...
+              {tr("Redefinindo...", "Resetting...")}
             </>
           ) : (
-            "Redefinir senha"
+            tr("Redefinir senha", "Reset password")
           )}
         </Button>
       </form>

@@ -12,46 +12,19 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-
-const steps = [
-  {
-    icon: CalendarDays,
-    color: "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
-    title: "Organize seu calendário editorial",
-    description:
-      "Crie e gerencie publicações para cada cliente com um calendário visual e intuitivo. Defina datas, canais e adicione o conteúdo de cada post.",
-  },
-  {
-    icon: Share2,
-    color: "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
-    title: "Compartilhe com seus clientes",
-    description:
-      "Gere links seguros de aprovação para cada cliente. Eles acessam diretamente o calendário sem precisar criar conta — simples e prático.",
-  },
-  {
-    icon: CheckCircle2,
-    color: "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400",
-    title: "Aprovação em tempo real",
-    description:
-      "Seus clientes aprovam, pedem ajustes ou deixam comentários em cada publicação. Você acompanha o status de tudo em um só lugar.",
-  },
-  {
-    icon: MessageSquare,
-    color: "bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400",
-    title: "Comentários e feedback",
-    description:
-      "Thread de comentários em cada post permite uma comunicação clara entre agência e cliente, sem ruídos ou e-mails perdidos.",
-  },
-  {
-    icon: Users,
-    color: "bg-pink-100 text-pink-600 dark:bg-pink-950 dark:text-pink-400",
-    title: "Colabore com seu time",
-    description:
-      "Convide membros da sua equipe e atribua clientes a cada pessoa. Todos trabalham juntos com permissões adequadas.",
-  },
-];
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export default function OnboardingPage() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const steps = [
+    { icon: CalendarDays, color: "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400", title: tr("Organize seu calendário editorial", "Organize your editorial calendar"), description: tr("Crie e gerencie publicações para cada cliente com um calendário visual e intuitivo. Defina datas, canais e adicione o conteúdo de cada post.", "Create and manage posts for every client with a visual calendar. Set dates and channels, then add each post’s content.") },
+    { icon: Share2, color: "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400", title: tr("Compartilhe com seus clientes", "Share with your clients"), description: tr("Gere links seguros de aprovação para cada cliente. Eles acessam diretamente o calendário sem precisar criar conta — simples e prático.", "Generate secure approval links for each client. They open the calendar directly without creating an account.") },
+    { icon: CheckCircle2, color: "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400", title: tr("Aprovação em tempo real", "Real-time approval"), description: tr("Seus clientes aprovam, pedem ajustes ou deixam comentários em cada publicação. Você acompanha o status de tudo em um só lugar.", "Clients approve, request changes, or comment on every post. Track every status in one place.") },
+    { icon: MessageSquare, color: "bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400", title: tr("Comentários e feedback", "Comments and feedback"), description: tr("Thread de comentários em cada post permite uma comunicação clara entre agência e cliente, sem ruídos ou e-mails perdidos.", "Comment threads on every post keep agency and client communication clear, with no lost emails.") },
+    { icon: Users, color: "bg-pink-100 text-pink-600 dark:bg-pink-950 dark:text-pink-400", title: tr("Colabore com seu time", "Collaborate with your team"), description: tr("Convide membros da sua equipe e atribua clientes a cada pessoa. Todos trabalham juntos com permissões adequadas.", "Invite team members and assign clients to each person. Everyone works together with the right permissions.") },
+  ];
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -114,7 +87,7 @@ export default function OnboardingPage() {
               onClick={handleComplete}
               className="text-muted-foreground"
             >
-              Pular
+              {tr("Pular", "Skip")}
             </Button>
           ) : (
             <Button
@@ -122,18 +95,18 @@ export default function OnboardingPage() {
               onClick={() => setCurrentStep((s) => s - 1)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
+              {tr("Voltar", "Back")}
             </Button>
           )}
 
           {isLast ? (
             <Button onClick={handleComplete} size="lg">
-              Começar a usar
+              {tr("Começar a usar", "Get started")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={() => setCurrentStep((s) => s + 1)} size="lg">
-              Próximo
+              {tr("Próximo", "Next")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           )}

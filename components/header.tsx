@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import type { PostStatus } from "./post-slide";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 interface HeaderProps {
   clientName: string;
@@ -22,6 +24,8 @@ export function Header({
   canApprove = true,
   reviewerName,
 }: HeaderProps) {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const getStatusColor = (status: PostStatus) => {
     switch (status) {
       case "approved":
@@ -43,7 +47,7 @@ export function Header({
           <p className="text-lg font-semibold">{clientName}</p>
           {reviewerName && (
             <p className="text-xs text-muted-foreground hidden sm:block">
-              Revisando como {reviewerName}
+              {tr("Revisando como", "Reviewing as")} {reviewerName}
             </p>
           )}
         </div>
@@ -64,7 +68,7 @@ export function Header({
             data-status="pending"
             data-action="change-status"
           >
-            Pendente
+            {tr("Pendente", "Pending")}
           </Button>
           <Button
             size="sm"
@@ -74,7 +78,7 @@ export function Header({
             data-status="approved"
             data-action="change-status"
           >
-            Aprovado
+            {tr("Aprovado", "Approved")}
           </Button>
           <Button
             size="sm"
@@ -86,11 +90,11 @@ export function Header({
             data-status="adjustments"
             data-action="change-status"
           >
-            Ajustes
+            {tr("Ajustes", "Changes")}
           </Button>
           </>
           ) : (
-            <span className="text-xs text-muted-foreground px-2">Somente visualização</span>
+            <span className="text-xs text-muted-foreground px-2">{tr("Somente visualização", "View only")}</span>
           )}
 
           {/* Calendar Button with left margin */}
@@ -102,7 +106,7 @@ export function Header({
               data-action="open-calendar"
             >
               <Calendar className="h-4 w-4 mr-2" />
-              Calendário
+              {tr("Calendário", "Calendar")}
             </Button>
           </div>
         </div>

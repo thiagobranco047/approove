@@ -9,8 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export default function SignupPage() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -42,7 +46,7 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Erro ao criar conta");
+        setError(data.error || tr("Erro ao criar conta", "Unable to create account"));
         return;
       }
 
@@ -60,7 +64,7 @@ export default function SignupPage() {
       router.push("/onboarding");
       router.refresh();
     } catch {
-      setError("Erro ao criar conta. Tente novamente.");
+      setError(tr("Erro ao criar conta. Tente novamente.", "Unable to create account. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -78,10 +82,10 @@ export default function SignupPage() {
           Approove
         </h1>
         <h2 className="text-2xl font-semibold tracking-tight">
-          Crie sua conta
+          {tr("Crie sua conta", "Create your account")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Comece a organizar e aprovar conteúdo com seu time
+          {tr("Comece a organizar e aprovar conteúdo com seu time", "Start organizing and approving content with your team")}
         </p>
       </div>
 
@@ -113,7 +117,7 @@ export default function SignupPage() {
             />
           </svg>
         )}
-        Continuar com Google
+        {tr("Continuar com Google", "Continue with Google")}
       </Button>
 
       <div className="relative">
@@ -122,7 +126,7 @@ export default function SignupPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            ou crie com email
+            {tr("ou crie com email", "or create an account with email")}
           </span>
         </div>
       </div>
@@ -135,7 +139,7 @@ export default function SignupPage() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="name">Seu nome</Label>
+          <Label htmlFor="name">{tr("Seu nome", "Your name")}</Label>
           <Input
             id="name"
             name="name"
@@ -163,12 +167,12 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Senha</Label>
+          <Label htmlFor="password">{tr("Senha", "Password")}</Label>
           <Input
             id="password"
             name="password"
             type="password"
-            placeholder="Mínimo 6 caracteres"
+            placeholder={tr("Mínimo 6 caracteres", "At least 6 characters")}
             value={formData.password}
             onChange={handleChange}
             required
@@ -178,12 +182,12 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="organizationName">Nome da empresa / agência</Label>
+          <Label htmlFor="organizationName">{tr("Nome da empresa / agência", "Company / agency name")}</Label>
           <Input
             id="organizationName"
             name="organizationName"
             type="text"
-            placeholder="Minha Agência"
+            placeholder={tr("Minha Agência", "My Agency")}
             value={formData.organizationName}
             onChange={handleChange}
             required
@@ -195,21 +199,21 @@ export default function SignupPage() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Criando conta...
+              {tr("Criando conta...", "Creating account...")}
             </>
           ) : (
-            "Criar conta grátis"
+            tr("Criar conta grátis", "Create a free account")
           )}
         </Button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Já tem uma conta?{" "}
+        {tr("Já tem uma conta?", "Already have an account?")}{" "}
         <Link
           href="/login"
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
-          Fazer login
+          {tr("Fazer login", "Log in")}
         </Link>
       </p>
     </div>

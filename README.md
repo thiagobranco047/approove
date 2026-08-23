@@ -193,6 +193,19 @@ Objetos sandbox criados para este app:
 | Pro | `Approove SaaS - Pro` | US$75/mês |
 | Studio | `Approove SaaS - Studio` | US$150/mês |
 
+Cada Price usa USD como moeda padrão e inclui uma opção manual para o Brasil:
+
+| Plano | Brasil |
+|---|---:|
+| Starter | R$197/mês |
+| Pro | R$497/mês |
+| Studio | R$997/mês |
+
+O Stripe Checkout seleciona BRL automaticamente para clientes no Brasil. Em
+países sem uma opção de moeda configurada, o Checkout usa o USD padrão. A
+interface segue a mesma regra a partir dos cabeçalhos geográficos da Vercel ou
+Cloudflare, com `Accept-Language` apenas como fallback de desenvolvimento.
+
 ## Piloto fechado — deploy e checklist
 
 Use este roteiro para colocar 1–3 agências reais em produção antes do lançamento comercial.

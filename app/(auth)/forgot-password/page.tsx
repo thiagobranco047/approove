@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export default function ForgotPasswordPage() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,13 +31,13 @@ export default function ForgotPasswordPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Erro ao solicitar redefinição. Tente novamente.");
+        setError(data.error ?? tr("Erro ao solicitar redefinição. Tente novamente.", "Unable to request a reset. Please try again."));
         return;
       }
 
       setSent(true);
     } catch {
-      setError("Erro ao solicitar redefinição. Tente novamente.");
+      setError(tr("Erro ao solicitar redefinição. Tente novamente.", "Unable to request a reset. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -44,10 +48,9 @@ export default function ForgotPasswordPage() {
       <div className="space-y-6">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight lg:hidden">Approove</h1>
-          <h2 className="text-2xl font-semibold tracking-tight">Verifique seu e-mail</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{tr("Verifique seu e-mail", "Check your email")}</h2>
           <p className="text-sm text-muted-foreground">
-            Se <strong>{email}</strong> estiver cadastrado, enviamos um link para
-            redefinir sua senha. O link expira em 1 hora.
+            {tr("Se", "If")} <strong>{email}</strong> {tr("estiver cadastrado, enviamos um link para redefinir sua senha. O link expira em 1 hora.", "is registered, we sent a password reset link. It expires in 1 hour.")}
           </p>
         </div>
         <Link
@@ -55,7 +58,7 @@ export default function ForgotPasswordPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar para o login
+          {tr("Voltar para o login", "Back to login")}
         </Link>
       </div>
     );
@@ -65,9 +68,9 @@ export default function ForgotPasswordPage() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight lg:hidden">Approove</h1>
-        <h2 className="text-2xl font-semibold tracking-tight">Esqueceu sua senha?</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">{tr("Esqueceu sua senha?", "Forgot your password?")}</h2>
         <p className="text-sm text-muted-foreground">
-          Informe seu e-mail e enviaremos um link para redefinir sua senha.
+          {tr("Informe seu e-mail e enviaremos um link para redefinir sua senha.", "Enter your email and we’ll send you a password reset link.")}
         </p>
       </div>
 
@@ -95,10 +98,10 @@ export default function ForgotPasswordPage() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enviando...
+              {tr("Enviando...", "Sending...")}
             </>
           ) : (
-            "Enviar link de redefinição"
+            tr("Enviar link de redefinição", "Send reset link")
           )}
         </Button>
       </form>
@@ -108,7 +111,7 @@ export default function ForgotPasswordPage() {
         className="inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
       >
         <ArrowLeft className="h-4 w-4" />
-        Voltar para o login
+        {tr("Voltar para o login", "Back to login")}
       </Link>
     </div>
   );

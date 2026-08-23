@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, ExternalLink, Search, Users, AlertTriangle, RefreshCw } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 interface ClientData {
   id: string;
@@ -27,17 +29,18 @@ interface ClientData {
 }
 
 export default function ClientsPage() {
+  const locale = useLocale();
+  const tr = useCallback(
+    (pt: string, en: string) => localizedText(locale, pt, en),
+    [locale]
+  );
   const router = useRouter();
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     setLoadError(null);
     try {
       const response = await fetch("/api/clients");
@@ -46,17 +49,21 @@ export default function ClientsPage() {
         setLoadError(
           typeof data.error === "string"
             ? data.error
-            : "Erro ao carregar clientes. Tente novamente."
+            : tr("Erro ao carregar clientes. Tente novamente.", "Unable to load clients. Please try again.")
         );
         return;
       }
       setClients(data.clients);
     } catch {
-      setLoadError("Erro de conexão. Verifique sua rede e tente novamente.");
+      setLoadError(tr("Erro de conexão. Verifique sua rede e tente novamente.", "Connection error. Check your network and try again."));
     } finally {
       setLoading(false);
     }
-  };
+  }, [tr]);
+
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
 
   const openClientPage = (client: ClientData) => {
     const version = client.versions[0]?.version || "v1";
@@ -76,14 +83,14 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{tr("Clientes", "Clients")}</h1>
           <p className="text-muted-foreground">
-            Gerencie sua carteira de clientes
+            {tr("Gerencie sua carteira de clientes", "Manage your client roster")}
           </p>
         </div>
         <Button onClick={() => router.push("/dashboard/clients/new")}>
           <Plus className="mr-2 h-4 w-4" />
-          Novo Cliente
+          {tr("Novo Cliente", "New client")}
         </Button>
       </div>
 
@@ -91,7 +98,7 @@ export default function ClientsPage() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar cliente..."
+            placeholder={tr("Buscar cliente...", "Search clients...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -103,11 +110,11 @@ export default function ClientsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <AlertTriangle className="h-12 w-12 text-orange-500 mb-4" />
-            <p className="text-lg font-medium">Não foi possível carregar os clientes</p>
+            <p className="text-lg font-medium">{tr("Não foi possível carregar os clientes", "Unable to load clients")}</p>
             <p className="text-sm text-muted-foreground mt-2 max-w-md">{loadError}</p>
             <Button className="mt-4" onClick={() => { setLoading(true); fetchClients(); }}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Tentar novamente
+              {tr("Tentar novamente", "Try again")}
             </Button>
           </CardContent>
         </Card>
@@ -126,12 +133,12 @@ export default function ClientsPage() {
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium">
-              {search ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
+              {search ? tr("Nenhum cliente encontrado", "No clients found") : tr("Nenhum cliente cadastrado", "No clients yet")}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               {search
-                ? "Tente outro termo de busca"
-                : "Comece adicionando seu primeiro cliente"}
+                ? tr("Tente outro termo de busca", "Try another search term")
+                : tr("Comece adicionando seu primeiro cliente", "Start by adding your first client")}
             </p>
             {!search && (
               <Button
@@ -139,7 +146,7 @@ export default function ClientsPage() {
                 onClick={() => router.push("/dashboard/clients/new")}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Cliente
+                {tr("Adicionar Cliente", "Add client")}
               </Button>
             )}
           </CardContent>
@@ -171,7 +178,7 @@ export default function ClientsPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 flex-shrink-0"
-                      title="Abrir calendário (visão do cliente)"
+                      title={tr("Abrir calendário (visão do cliente)", "Open calendar (client view)")}
                       onClick={(e) => { e.stopPropagation(); openClientPage(client); }}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -181,9 +188,9 @@ export default function ClientsPage() {
                   <div className="mb-3">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-muted-foreground">
-                        {total} publicações
+                        {total} {tr("publicações", "posts")}
                       </span>
-                      <span className="font-medium">{approvedPct}% aprovado</span>
+                      <span className="font-medium">{approvedPct}% {tr("aprovado", "approved")}</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
@@ -198,17 +205,17 @@ export default function ClientsPage() {
                       variant="secondary"
                       className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400 hover:bg-green-100"
                     >
-                      {client.stats.approved} aprovadas
+                      {client.stats.approved} {tr("aprovadas", "approved")}
                     </Badge>
                     <Badge variant="secondary">
-                      {client.stats.pending} pendentes
+                      {client.stats.pending} {tr("pendentes", "pending")}
                     </Badge>
                     {client.stats.adjustments > 0 && (
                       <Badge
                         variant="secondary"
                         className="bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 hover:bg-orange-100"
                       >
-                        {client.stats.adjustments} ajustes
+                        {client.stats.adjustments} {tr("ajustes", "changes")}
                       </Badge>
                     )}
                   </div>
