@@ -5,6 +5,7 @@ import { requireOrganization } from "@/lib/auth";
 import { absoluteUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { TRIAL_DAYS } from "@/lib/billing-access";
 import { currencyForLocale } from "@/lib/pricing";
 import { getRequestLocale } from "@/lib/request-locale";
 
@@ -17,6 +18,8 @@ function isCurrencyMismatch(error: unknown) {
 
 const checkoutSchema = z.object({
   plan: z.enum(["starter", "pro", "studio"]),
+  // "paywall" = veio da tela pós-signup; muda os destinos de retorno.
+  from: z.enum(["paywall", "settings"]).default("settings"),
 });
 
 const priceByPlan = {
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { plan } = checkoutSchema.parse(await request.json());
+    const { plan, from } = checkoutSchema.parse(await request.json());
     const price = priceByPlan[plan];
 
     if (!price) {
@@ -70,17 +73,28 @@ export async function POST(request: NextRequest) {
     // moeda do locale para o Checkout cobrar o mesmo valor que foi anunciado.
     const currency = currencyForLocale(await getRequestLocale());
 
+    // Trial de 15 dias com cartão obrigatório, uma única vez por organização.
+    // O Stripe valida o cartão via SetupIntent, cobra no fim do trial e ancora
+    // o ciclo mensal nessa data.
+    const startsTrial = !organization.trialUsedAt;
+
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       locale: "auto",
       currency,
       customer: stripeCustomerId,
       line_items: [{ price, quantity: 1 }],
-      success_url: absoluteUrl("/dashboard/settings?billing=success"),
-      cancel_url: absoluteUrl("/dashboard/settings?billing=cancelled"),
-      metadata: { app: "approove", organizationId: organization.id, plan },
+      payment_method_collection: "always",
+      success_url: absoluteUrl(
+        "/api/billing/confirm?session_id={CHECKOUT_SESSION_ID}"
+      ),
+      cancel_url: absoluteUrl(
+        from === "paywall" ? "/subscribe" : "/dashboard/settings?billing=cancelled"
+      ),
+      metadata: { app: "approove", organizationId: organization.id, plan, from },
       subscription_data: {
         metadata: { app: "approove", organizationId: organization.id, plan },
+        ...(startsTrial ? { trial_period_days: TRIAL_DAYS } : {}),
       },
     };
 

@@ -1,12 +1,31 @@
+import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { requireOrganization } from "@/lib/auth";
+import { hasBillingAccess } from "@/lib/billing-access";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Paywall: sem assinatura ativa (trial conta), nada do app é acessível.
+  let target: string | null = null;
+
+  try {
+    const { organization } = await requireOrganization();
+    if (!hasBillingAccess(organization)) {
+      target = "/subscribe";
+    }
+  } catch {
+    target = "/login";
+  }
+
+  if (target) {
+    redirect(target);
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30">
       <AppSidebar />

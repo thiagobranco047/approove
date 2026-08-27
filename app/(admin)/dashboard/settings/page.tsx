@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireOrganization } from "@/lib/auth";
 import { BillingActions } from "./billing-actions";
+import { isTrialing, trialDaysLeft } from "@/lib/billing-access";
 import { localizedText } from "@/lib/locale";
 import { getRequestLocale } from "@/lib/request-locale";
 
@@ -41,10 +42,19 @@ export default async function SettingsPage() {
               <p className="text-xl font-semibold">
                 {planLabels[organization.plan] ?? organization.plan}
               </p>
-              {organization.subscriptionStatus && (
+              {isTrialing(organization) && organization.currentPeriodEnd ? (
                 <p className="text-sm text-muted-foreground">
-                  {organization.subscriptionStatus}
+                  {tr(
+                    `Período gratuito — ${trialDaysLeft(organization)} dias restantes (primeira cobrança em ${organization.currentPeriodEnd.toLocaleDateString("pt-BR")})`,
+                    `Free trial — ${trialDaysLeft(organization)} days left (first charge on ${organization.currentPeriodEnd.toLocaleDateString("en-US")})`
+                  )}
                 </p>
+              ) : (
+                organization.subscriptionStatus && (
+                  <p className="text-sm text-muted-foreground">
+                    {organization.subscriptionStatus}
+                  </p>
+                )
               )}
             </div>
           </div>

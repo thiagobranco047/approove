@@ -61,7 +61,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/onboarding");
+      router.push("/subscribe");
       router.refresh();
     } catch {
       setError(tr("Erro ao criar conta. Tente novamente.", "Unable to create account. Please try again."));
@@ -72,7 +72,7 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/onboarding" });
+    await signIn("google", { callbackUrl: "/subscribe" });
   };
 
   return (
