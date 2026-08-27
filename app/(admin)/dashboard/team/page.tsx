@@ -36,6 +36,8 @@ import {
   UserMinus,
   ArrowUpDown,
 } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 interface MemberData {
   id: string;
@@ -80,6 +82,8 @@ function getInitials(name: string | null, email: string): string {
 }
 
 export default function TeamPage() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -121,7 +125,7 @@ export default function TeamPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Erro ao convidar membro");
+        setError(data.error || tr("Erro ao convidar membro", "Unable to invite member"));
         return;
       }
 
@@ -131,7 +135,7 @@ export default function TeamPage() {
       setInviteName("");
       setInviteRole("member");
     } catch {
-      setError("Erro ao convidar membro");
+      setError(tr("Erro ao convidar membro", "Unable to invite member"));
     } finally {
       setInviting(false);
     }
@@ -148,7 +152,7 @@ export default function TeamPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Erro ao alterar função");
+        alert(data.error || tr("Erro ao alterar função", "Unable to change role"));
         return;
       }
 
@@ -156,13 +160,13 @@ export default function TeamPage() {
         prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
       );
     } catch {
-      alert("Erro ao alterar função");
+      alert(tr("Erro ao alterar função", "Unable to change role"));
     }
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
-    const displayName = memberName || "este membro";
-    if (!confirm(`Tem certeza que deseja remover ${displayName} da equipe?`)) {
+    const displayName = memberName || tr("este membro", "this member");
+    if (!confirm(tr(`Tem certeza que deseja remover ${displayName} da equipe?`, `Are you sure you want to remove ${displayName} from the team?`))) {
       return;
     }
 
@@ -174,13 +178,13 @@ export default function TeamPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Erro ao remover membro");
+        alert(data.error || tr("Erro ao remover membro", "Unable to remove member"));
         return;
       }
 
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch {
-      alert("Erro ao remover membro");
+      alert(tr("Erro ao remover membro", "Unable to remove member"));
     }
   };
 
@@ -194,24 +198,23 @@ export default function TeamPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Time</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{tr("Time", "Team")}</h1>
           <p className="text-muted-foreground">
-            Gerencie os membros da sua organização
+            {tr("Gerencie os membros da sua organização", "Manage your organization’s members")}
           </p>
         </div>
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogTrigger asChild>
             <Button>
               <UserPlus className="mr-2 h-4 w-4" />
-              Convidar membro
+              {tr("Convidar membro", "Invite member")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Convidar novo membro</DialogTitle>
+              <DialogTitle>{tr("Convidar novo membro", "Invite a new member")}</DialogTitle>
               <DialogDescription>
-                Envie um convite para um novo membro da equipe. Se o usuário não
-                possuir conta, uma será criada automaticamente.
+                {tr("Envie um convite para um novo membro da equipe. Se o usuário não possuir conta, uma será criada automaticamente.", "Send an invitation to a new team member. If they don’t have an account, one will be created automatically.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -239,7 +242,7 @@ export default function TeamPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Função</Label>
+                <Label>{tr("Função", "Role")}</Label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -252,10 +255,10 @@ export default function TeamPage() {
                   >
                     <div className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
-                      <span className="text-sm font-medium">Membro</span>
+                      <span className="text-sm font-medium">{tr("Membro", "Member")}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      Pode visualizar e interagir com o conteúdo
+                      {tr("Pode visualizar e interagir com o conteúdo", "Can view and interact with content")}
                     </span>
                   </button>
                   <button
@@ -269,10 +272,10 @@ export default function TeamPage() {
                   >
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-4 w-4" />
-                      <span className="text-sm font-medium">Administrador</span>
+                      <span className="text-sm font-medium">{tr("Administrador", "Admin")}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      Pode gerenciar membros e conteúdo
+                      {tr("Pode gerenciar membros e conteúdo", "Can manage members and content")}
                     </span>
                   </button>
                 </div>
@@ -289,13 +292,13 @@ export default function TeamPage() {
                 onClick={() => setInviteOpen(false)}
                 disabled={inviting}
               >
-                Cancelar
+                {tr("Cancelar", "Cancel")}
               </Button>
               <Button
                 onClick={handleInvite}
                 disabled={!inviteEmail || !inviteName || inviting}
               >
-                {inviting ? "Convidando..." : "Enviar convite"}
+                {inviting ? tr("Convidando...", "Inviting...") : tr("Enviar convite", "Send invitation")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -306,7 +309,7 @@ export default function TeamPage() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome ou email..."
+            placeholder={tr("Buscar por nome ou email...", "Search by name or email...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -338,18 +341,18 @@ export default function TeamPage() {
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium">
               {search
-                ? "Nenhum membro encontrado"
-                : "Nenhum membro na equipe"}
+                ? tr("Nenhum membro encontrado", "No members found")
+                : tr("Nenhum membro na equipe", "No team members yet")}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               {search
-                ? "Tente outro termo de busca"
-                : "Comece convidando membros para sua organização"}
+                ? tr("Tente outro termo de busca", "Try another search term")
+                : tr("Comece convidando membros para sua organização", "Start by inviting members to your organization")}
             </p>
             {!search && (
               <Button className="mt-4" onClick={() => setInviteOpen(true)}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Convidar membro
+                {tr("Convidar membro", "Invite member")}
               </Button>
             )}
           </CardContent>
@@ -358,9 +361,9 @@ export default function TeamPage() {
         <Card>
           <CardContent className="p-0">
             <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              <span>Membro</span>
-              <span className="w-28 text-center">Função</span>
-              <span className="w-28 text-center">Desde</span>
+              <span>{tr("Membro", "Member")}</span>
+              <span className="w-28 text-center">{tr("Função", "Role")}</span>
+              <span className="w-28 text-center">{tr("Desde", "Since")}</span>
               <span className="w-10" />
             </div>
             <Separator />
@@ -384,7 +387,7 @@ export default function TeamPage() {
 
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {member.user.name || "Sem nome"}
+                      {member.user.name || tr("Sem nome", "No name")}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {member.user.email}
@@ -396,7 +399,7 @@ export default function TeamPage() {
                       className={`${roleConfig.className} gap-1 hidden sm:inline-flex w-28 justify-center`}
                     >
                       <RoleIcon className="h-3 w-3" />
-                      {roleConfig.label}
+                      {member.role === "owner" ? tr("Proprietário", "Owner") : member.role === "admin" ? tr("Administrador", "Admin") : tr("Membro", "Member")}
                     </Badge>
 
                     <Badge
@@ -407,7 +410,7 @@ export default function TeamPage() {
                     </Badge>
 
                     <span className="text-xs text-muted-foreground w-28 text-center hidden sm:block">
-                      {new Date(member.createdAt).toLocaleDateString("pt-BR", {
+                      {new Date(member.createdAt).toLocaleDateString(locale, {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
@@ -433,7 +436,7 @@ export default function TeamPage() {
                               }
                             >
                               <ArrowUpDown className="mr-2 h-4 w-4" />
-                              Promover a Administrador
+                              {tr("Promover a Administrador", "Promote to Admin")}
                             </DropdownMenuItem>
                           )}
                           {member.role === "admin" && (
@@ -443,7 +446,7 @@ export default function TeamPage() {
                               }
                             >
                               <ArrowUpDown className="mr-2 h-4 w-4" />
-                              Rebaixar a Membro
+                              {tr("Rebaixar a Membro", "Change to Member")}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -457,7 +460,7 @@ export default function TeamPage() {
                             }
                           >
                             <UserMinus className="mr-2 h-4 w-4" />
-                            Remover da equipe
+                            {tr("Remover da equipe", "Remove from team")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

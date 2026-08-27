@@ -6,6 +6,8 @@ import { ScrollFill } from "@/components/landing/scroll-fill";
 import { Parallax } from "@/components/landing/parallax";
 import { Preloader } from "@/components/landing/preloader";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
+import { localizedText, type AppLocale } from "@/lib/locale";
+import { planPrice, type PaidPlan } from "@/lib/pricing";
 
 /*
  * Paleta editorial da landing (referências: units.gr + poetic.com).
@@ -20,19 +22,22 @@ const green = "#00AA3C";
 const purple = "#AB54F7";
 const coral = "#FF5C38";
 
-// Valores de exibição dos planos. Devem refletir os preços configurados no
-// Stripe (STRIPE_PRICE_STARTER / PRO / STUDIO) — atualizar aqui ao mudar lá.
-const PLAN_PRICING: Record<string, { price: string; period?: string }> = {
-  free: { price: "Grátis" },
-  starter: { price: "US$ 25", period: "/mês" },
-  pro: { price: "US$ 75", period: "/mês" },
-  studio: { price: "US$ 150", period: "/mês" },
-};
+// Preços vêm de lib/pricing (espelho dos Stripe Prices) para que a landing,
+// o painel e o Checkout mostrem sempre o mesmo valor na mesma moeda.
+function planPricing(locale: AppLocale): Record<string, { price: string; period?: string }> {
+  const paid = (plan: PaidPlan) => planPrice(plan, locale);
 
-function limitLabel(value: number | null, singular: string, plural: string) {
+  return {
+    free: { price: localizedText(locale, "Grátis", "Free") },
+    starter: paid("starter"),
+    pro: paid("pro"),
+    studio: paid("studio"),
+  };
+}
+
+function limitLabel(value: number | null, singular: string, plural: string, unlimitedLabel: string) {
   if (value === null) {
-    const label = `${plural} ilimitados`;
-    return label.charAt(0).toUpperCase() + label.slice(1);
+    return unlimitedLabel;
   }
   return `${value} ${value === 1 ? singular : plural}`;
 }
@@ -87,21 +92,23 @@ function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
-function Navbar() {
+function Navbar({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+
   return (
     <header
       className="sticky top-0 z-50 border-b backdrop-blur-md"
       style={{ backgroundColor: "rgba(244,233,225,0.85)", borderColor: "rgba(27,25,23,0.1)" }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
-        <Link href="/" aria-label="Approove — página inicial" className="text-xl">
+        <Link href="/" aria-label={tr("Approove — página inicial", "Approove — home")} className="text-xl">
           <Wordmark />
         </Link>
         <nav className="hidden items-center gap-8 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.2em] md:flex">
           {[
-            ["#funcionalidades", "Funcionalidades"],
-            ["#como-funciona", "Como funciona"],
-            ["#precos", "Preços"],
+            ["#funcionalidades", tr("Funcionalidades", "Features")],
+            ["#como-funciona", tr("Como funciona", "How it works")],
+            ["#precos", tr("Preços", "Pricing")],
             ["#faq", "FAQ"],
           ].map(([href, label]) => (
             <a
@@ -118,13 +125,13 @@ function Navbar() {
             href="/login"
             className="hidden rounded-full px-5 py-2.5 text-sm font-semibold transition-opacity hover:opacity-70 sm:inline-flex"
           >
-            Entrar
+            {tr("Entrar", "Log in")}
           </Link>
           <Link
             href="/signup"
             className="inline-flex items-center rounded-full bg-[#1B1917] px-5 py-2.5 text-sm font-semibold text-[#F4E9E1] transition-colors duration-300 hover:bg-[#0072E3] hover:text-white"
           >
-            Começar grátis
+            {tr("Começar grátis", "Start free")}
           </Link>
         </div>
       </div>
@@ -132,12 +139,10 @@ function Navbar() {
   );
 }
 
-function HeroHeadline() {
-  const lines = [
-    ["Chega", "de", "aprovar"],
-    ["posts", "pelo"],
-    ["WhatsApp."],
-  ];
+function HeroHeadline({ locale }: { locale: AppLocale }) {
+  const lines = locale === "pt-BR"
+    ? [["Chega", "de", "aprovar"], ["posts", "pelo"], ["WhatsApp."]]
+    : [["Stop", "approving"], ["posts", "on"], ["WhatsApp."]];
   let wordIndex = 0;
 
   return (
@@ -166,31 +171,34 @@ function HeroHeadline() {
   );
 }
 
-function Hero() {
+function Hero({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+
   return (
     <section className="mx-auto max-w-7xl px-5 pb-24 pt-16 sm:px-8 sm:pt-24">
       <div className="fade-up" style={{ "--d": "550ms" } as React.CSSProperties}>
-        <Eyebrow>Aprovação de conteúdo para agências</Eyebrow>
+        <Eyebrow>{tr("Aprovação de conteúdo para agências", "Content approval for agencies")}</Eyebrow>
       </div>
       <div className="mt-6">
-        <HeroHeadline />
+        <HeroHeadline locale={locale} />
       </div>
       <div className="mt-10 flex flex-col justify-between gap-8 md:flex-row md:items-end">
         <p
           className="fade-up max-w-md text-lg font-medium leading-snug"
           style={{ "--d": "1350ms", color: "rgba(27,25,23,0.65)" } as React.CSSProperties}
         >
-          O calendário editorial da sua agência em um só lugar. O cliente
-          revisa, comenta direto na arte e aprova por um simples link — sem
-          criar conta, sem prints, sem retrabalho.
+          {tr(
+            "O calendário editorial da sua agência em um só lugar. O cliente revisa, comenta direto na arte e aprova por um simples link — sem criar conta, sem prints, sem retrabalho.",
+            "Your agency’s editorial calendar in one place. Clients review, comment directly on the creative, and approve through a simple link — no account, screenshots, or rework."
+          )}
         </p>
         <div
           className="fade-up flex flex-wrap items-center gap-3"
           style={{ "--d": "1500ms" } as React.CSSProperties}
         >
-          <PillLink href="/signup">Começar grátis</PillLink>
+          <PillLink href="/signup">{tr("Começar grátis", "Start free")}</PillLink>
           <PillLink href="#precos" variant="outline">
-            Ver planos
+            {tr("Ver planos", "View plans")}
           </PillLink>
         </div>
       </div>
@@ -198,18 +206,20 @@ function Hero() {
         className="fade-up mt-4 text-sm font-medium"
         style={{ "--d": "1650ms", color: "rgba(27,25,23,0.45)" } as React.CSSProperties}
       >
-        Plano Free para sempre · Sem cartão de crédito
+        {tr("Plano Free para sempre · Sem cartão de crédito", "Free plan forever · No credit card")}
       </p>
       <Reveal className="mt-16">
         <Parallax speed={0.06}>
-          <ApprovalMockup />
+          <ApprovalMockup locale={locale} />
         </Parallax>
       </Reveal>
     </section>
   );
 }
 
-function ApprovalMockup() {
+function ApprovalMockup({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+
   return (
     <div
       className="overflow-hidden rounded-3xl border shadow-[0_40px_80px_-40px_rgba(27,25,23,0.4)]"
@@ -263,7 +273,7 @@ function ApprovalMockup() {
             className="absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-bold"
             style={{ backgroundColor: "rgba(27,25,23,0.75)", color: cream }}
           >
-            Versão 2
+            {tr("Versão 2", "Version 2")}
           </span>
         </div>
 
@@ -274,24 +284,24 @@ function ApprovalMockup() {
             style={{ backgroundColor: green }}
           >
             <Check className="h-4 w-4" strokeWidth={3} />
-            Aprovado
+            {tr("Aprovado", "Approved")}
           </span>
           <div className="space-y-2.5 text-[13px] leading-snug">
             <div
               className="rounded-2xl rounded-tl-md p-3.5"
               style={{ backgroundColor: "rgba(27,25,23,0.05)" }}
             >
-              <p className="mb-1 font-bold">Cliente</p>
+              <p className="mb-1 font-bold">{tr("Cliente", "Client")}</p>
               <p style={{ color: "rgba(27,25,23,0.6)" }}>
-                Ajustar o tom do azul no fundo (pin 1)
+                {tr("Ajustar o tom do azul no fundo (pin 1)", "Adjust the blue tone in the background (pin 1)")}
               </p>
             </div>
             <div
               className="ml-5 rounded-2xl rounded-tr-md p-3.5 text-white"
               style={{ backgroundColor: blue }}
             >
-              <p className="mb-1 font-bold">Agência</p>
-              <p className="text-white/85">Nova versão enviada com o ajuste ✓</p>
+              <p className="mb-1 font-bold">{tr("Agência", "Agency")}</p>
+              <p className="text-white/85">{tr("Nova versão enviada com o ajuste ✓", "New version sent with the adjustment ✓")}</p>
             </div>
           </div>
           <div className="mt-auto grid grid-cols-5 gap-1.5 pt-3">
@@ -318,19 +328,10 @@ function ApprovalMockup() {
   );
 }
 
-const marqueeItems = [
-  "Feed",
-  "Stories",
-  "Reels",
-  "Carrossel",
-  "LinkedIn",
-  "Pins na arte",
-  "Versões",
-  "Aprovação por link",
-  "Calendário editorial",
-];
-
-function Marquee() {
+function Marquee({ locale }: { locale: AppLocale }) {
+  const marqueeItems = locale === "pt-BR"
+    ? ["Feed", "Stories", "Reels", "Carrossel", "LinkedIn", "Pins na arte", "Versões", "Aprovação por link", "Calendário editorial"]
+    : ["Feed", "Stories", "Reels", "Carousel", "LinkedIn", "Creative pins", "Versions", "Link approval", "Editorial calendar"];
   const strip = (ariaHidden: boolean) => (
     <div aria-hidden={ariaHidden} className="flex shrink-0 items-center">
       {marqueeItems.map((item) => (
@@ -359,20 +360,28 @@ function Marquee() {
   );
 }
 
-const stats = [
-  { value: "1", color: blue, label: "link é tudo o que o seu cliente precisa para aprovar" },
-  { value: "0", color: amber, label: "contas, senhas ou apps para o cliente instalar" },
-  { value: "100%", color: green, label: "do feedback ancorado no pixel exato da arte" },
-  { value: "∞", color: purple, label: "versões por arte, com histórico completo de aprovação" },
-];
+function StatsSection({ locale }: { locale: AppLocale }) {
+  const stats = locale === "pt-BR"
+    ? [
+        { value: "1", color: blue, label: "link é tudo o que o seu cliente precisa para aprovar" },
+        { value: "0", color: amber, label: "contas, senhas ou apps para o cliente instalar" },
+        { value: "100%", color: green, label: "do feedback ancorado no pixel exato da arte" },
+        { value: "∞", color: purple, label: "versões por arte, com histórico completo de aprovação" },
+      ]
+    : [
+        { value: "1", color: blue, label: "link is all your client needs to approve" },
+        { value: "0", color: amber, label: "accounts, passwords, or apps for the client to install" },
+        { value: "100%", color: green, label: "of feedback anchored to the exact pixel" },
+        { value: "∞", color: purple, label: "versions per creative, with a complete approval history" },
+      ];
+  const isBrazil = locale === "pt-BR";
 
-function StatsSection() {
   return (
     <section style={{ backgroundColor: ink, color: cream }}>
       <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <ScrollFill
-          text="O aprovadinho ✔ perdido no chat não é processo. É risco."
-          accents={{ "É": coral, "risco.": coral }}
+          text={isBrazil ? "O aprovadinho ✔ perdido no chat não é processo. É risco." : "An ‘approved’ ✔ lost in chat is not a process. It is a risk."}
+          accents={isBrazil ? { "É": coral, "risco.": coral } : { "risk.": coral }}
           className="max-w-4xl text-[clamp(2rem,5vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.03em]"
         />
         <div className="mt-16 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
@@ -397,17 +406,22 @@ function StatsSection() {
   );
 }
 
-const steps: {
+function getSteps(locale: AppLocale): {
   number: string;
   title: string;
   description: string;
   card: React.ReactNode;
-}[] = [
+}[] {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+
+  return [
   {
     number: "/1",
-    title: "Monte o calendário.",
-    description:
+    title: tr("Monte o calendário.", "Build the calendar."),
+    description: tr(
       "Crie o cliente, planeje as publicações do mês e envie as artes — feed, stories, reels, carrossel ou LinkedIn. Cada material aceita múltiplas versões.",
+      "Create the client, plan the month’s posts, and upload creatives for feeds, stories, reels, carousels, or LinkedIn. Every asset supports multiple versions."
+    ),
     card: (
       <div className="grid grid-cols-7 gap-2">
         {Array.from({ length: 14 }, (_, i) => {
@@ -432,9 +446,11 @@ const steps: {
   },
   {
     number: "/2",
-    title: "Envie um link.",
-    description:
+    title: tr("Envie um link.", "Send one link."),
+    description: tr(
       "O cliente acessa direto do navegador, sem cadastro e sem senha. Convide revisores nomeados com papéis — visualizar, revisar ou aprovar.",
+      "Clients open it directly in the browser, with no signup or password. Invite named reviewers with viewer, reviewer, or approver roles."
+    ),
     card: (
       <div className="space-y-2.5">
         <div
@@ -443,14 +459,14 @@ const steps: {
         >
           <span className="truncate">approove.app/c/cliente-acme?t=•••••</span>
           <span className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold text-white" style={{ backgroundColor: ink }}>
-            Copiar
+            {tr("Copiar", "Copy")}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            ["Ana · Aprovadora", green],
-            ["Bruno · Revisor", amber],
-            ["Carla · Visualizadora", purple],
+            [tr("Ana · Aprovadora", "Ana · Approver"), green],
+            [tr("Bruno · Revisor", "Bruno · Reviewer"), amber],
+            [tr("Carla · Visualizadora", "Carla · Viewer"), purple],
           ].map(([name, color]) => (
             <span
               key={name as string}
@@ -467,15 +483,17 @@ const steps: {
   },
   {
     number: "/3",
-    title: "Receba o aprovado.",
-    description:
+    title: tr("Receba o aprovado.", "Get the approval."),
+    description: tr(
       "O cliente comenta direto na arte e aprova post a post. Cada decisão fica registrada com autor e data — respaldo completo para a agência.",
+      "The client comments directly on the creative and approves each post. Every decision is recorded with author and date for a complete audit trail."
+    ),
     card: (
       <div className="space-y-2">
         {[
-          ["Post do dia 8 · Feed", "Aprovado", green],
-          ["Post do dia 12 · Reels", "Aprovado", green],
-          ["Post do dia 15 · Stories", "Em ajustes", amber],
+          [tr("Post do dia 8 · Feed", "Day 8 post · Feed"), tr("Aprovado", "Approved"), green],
+          [tr("Post do dia 12 · Reels", "Day 12 post · Reels"), tr("Aprovado", "Approved"), green],
+          [tr("Post do dia 15 · Stories", "Day 15 post · Stories"), tr("Em ajustes", "Changes requested"), amber],
         ].map(([label, status, color]) => (
           <div
             key={label as string}
@@ -491,16 +509,20 @@ const steps: {
       </div>
     ),
   },
-];
+  ];
+}
 
-function HowItWorksSection() {
+function HowItWorksSection({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const steps = getSteps(locale);
+
   return (
     <section id="como-funciona" className="scroll-mt-16">
       <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
-        <Eyebrow>Como funciona</Eyebrow>
+        <Eyebrow>{tr("Como funciona", "How it works")}</Eyebrow>
         <Reveal bare>
           <h2 className="mt-6 max-w-3xl text-[clamp(2.2rem,5.5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em]">
-            <MaskedWords text="Do planejamento ao aprovado em três passos." />
+            <MaskedWords text={tr("Do planejamento ao aprovado em três passos.", "From planning to approval in three steps.")} />
           </h2>
         </Reveal>
         <div className="mt-16 space-y-6">
@@ -536,59 +558,60 @@ function HowItWorksSection() {
   );
 }
 
-const features = [
+function getFeatures(locale: AppLocale) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+
+  return [
   {
     color: blue,
     textColor: "#fff",
-    title: "Calendário editorial",
-    description:
-      "Todas as publicações do mês organizadas por cliente, com status visual de cada post.",
+    title: tr("Calendário editorial", "Editorial calendar"),
+    description: tr("Todas as publicações do mês organizadas por cliente, com status visual de cada post.", "Every post for the month organized by client, with a visual status for each item."),
   },
   {
     color: amber,
     textColor: ink,
-    title: "Pins na arte",
-    description:
-      "O cliente marca o ponto exato da imagem e comenta ali. Nada de “aquele azul do canto” por áudio.",
+    title: tr("Pins na arte", "Creative pins"),
+    description: tr("O cliente marca o ponto exato da imagem e comenta ali. Nada de “aquele azul do canto” por áudio.", "Clients mark the exact point on an image and comment there. No more vague voice notes about ‘that blue in the corner.’"),
   },
   {
     color: purple,
     textColor: "#fff",
-    title: "Versionamento",
-    description:
-      "Cada material guarda todas as versões. Compare, volte atrás e saiba o que foi aprovado.",
+    title: tr("Versionamento", "Version history"),
+    description: tr("Cada material guarda todas as versões. Compare, volte atrás e saiba o que foi aprovado.", "Every asset keeps all its versions. Compare, roll back, and know exactly what was approved."),
   },
   {
     color: green,
     textColor: "#fff",
-    title: "Aprovação por link",
-    description:
-      "Acesso por link seguro, sem conta e sem instalação. Menos atrito, aprovação mais rápida.",
+    title: tr("Aprovação por link", "Link-based approval"),
+    description: tr("Acesso por link seguro, sem conta e sem instalação. Menos atrito, aprovação mais rápida.", "Secure link access with no account or installation. Less friction and faster approvals."),
   },
   {
     color: coral,
     textColor: ink,
-    title: "Time e revisores",
-    description:
-      "Papéis definidos para o time da agência e revisores nomeados do lado do cliente.",
+    title: tr("Time e revisores", "Team and reviewers"),
+    description: tr("Papéis definidos para o time da agência e revisores nomeados do lado do cliente.", "Clear roles for the agency team and named reviewers on the client side."),
   },
   {
     color: ink,
     textColor: cream,
-    title: "Histórico completo",
-    description:
-      "Cada aprovação, ajuste e comentário registrado com autor e data. Respaldo total.",
+    title: tr("Histórico completo", "Complete history"),
+    description: tr("Cada aprovação, ajuste e comentário registrado com autor e data. Respaldo total.", "Every approval, change, and comment recorded with author and date. A complete audit trail."),
   },
-];
+  ];
+}
 
-function FeaturesSection() {
+function FeaturesSection({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const features = getFeatures(locale);
+
   return (
     <section id="funcionalidades" className="scroll-mt-16" style={{ backgroundColor: "#EFE2D6" }}>
       <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
-        <Eyebrow>Funcionalidades</Eyebrow>
+        <Eyebrow>{tr("Funcionalidades", "Features")}</Eyebrow>
         <Reveal bare>
           <h2 className="mt-6 max-w-3xl text-[clamp(2.2rem,5.5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em]">
-            <MaskedWords text="Um post. Um universo inteiro de contexto." />
+            <MaskedWords text={tr("Um post. Um universo inteiro de contexto.", "One post. A whole universe of context.")} />
           </h2>
         </Reveal>
         <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -623,37 +646,36 @@ function FeaturesSection() {
 
 const planOrder = ["free", "starter", "pro", "studio"] as const;
 
-const planCopy: Record<
-  (typeof planOrder)[number],
-  { name: string; description: string; highlighted?: boolean }
-> = {
-  free: { name: "Free", description: "Para testar com seu primeiro cliente" },
-  starter: { name: "Starter", description: "Para quem está começando a carteira" },
-  pro: { name: "Pro", description: "Para agências em crescimento", highlighted: true },
-  studio: { name: "Studio", description: "Para operações com muitos clientes" },
-};
+function PricingSection({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const pricingByPlan = planPricing(locale);
+  const planCopy: Record<(typeof planOrder)[number], { name: string; description: string; highlighted?: boolean }> = {
+    free: { name: "Free", description: tr("Para testar com seu primeiro cliente", "For testing with your first client") },
+    starter: { name: "Starter", description: tr("Para quem está começando a carteira", "For a growing client roster") },
+    pro: { name: "Pro", description: tr("Para agências em crescimento", "For growing agencies"), highlighted: true },
+    studio: { name: "Studio", description: tr("Para operações com muitos clientes", "For operations with many clients") },
+  };
 
-function PricingSection() {
   return (
     <section id="precos" className="scroll-mt-16">
       <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
-        <Eyebrow>Preços</Eyebrow>
+        <Eyebrow>{tr("Preços", "Pricing")}</Eyebrow>
         <Reveal bare>
           <h2 className="mt-6 max-w-3xl text-[clamp(2.2rem,5.5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.035em]">
-            <MaskedWords text="Planos que crescem com a sua carteira." />
+            <MaskedWords text={tr("Planos que crescem com a sua carteira.", "Plans that grow with your client roster.")} />
           </h2>
         </Reveal>
         <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {planOrder.map((plan, i) => {
             const { name, description, highlighted } = planCopy[plan];
             const limits = PLAN_LIMITS[plan];
-            const pricing = PLAN_PRICING[plan];
+            const pricing = pricingByPlan[plan];
             const items = [
-              limitLabel(limits.clients, "cliente", "clientes"),
-              limitLabel(limits.members, "usuário", "usuários"),
-              limitLabel(limits.reviewers, "revisor ativo", "revisores ativos"),
-              "Publicações ilimitadas",
-              "Aprovação por link",
+              limitLabel(limits.clients, tr("cliente", "client"), tr("clientes", "clients"), tr("Clientes ilimitados", "Unlimited clients")),
+              limitLabel(limits.members, tr("usuário", "user"), tr("usuários", "users"), tr("Usuários ilimitados", "Unlimited users")),
+              limitLabel(limits.reviewers, tr("revisor ativo", "active reviewer"), tr("revisores ativos", "active reviewers"), tr("Revisores ativos ilimitados", "Unlimited active reviewers")),
+              tr("Publicações ilimitadas", "Unlimited posts"),
+              tr("Aprovação por link", "Link-based approval"),
             ];
 
             return (
@@ -673,7 +695,7 @@ function PricingSection() {
                         className="rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.15em]"
                         style={{ backgroundColor: cream, color: ink }}
                       >
-                        Popular
+                        {tr("Popular", "Popular")}
                       </span>
                     )}
                   </div>
@@ -716,7 +738,7 @@ function PricingSection() {
                         : "bg-[#1B1917] text-[#F4E9E1] hover:bg-[#0072E3] hover:text-white"
                     }`}
                   >
-                    {plan === "free" ? "Começar grátis" : "Assinar"}
+                    {plan === "free" ? tr("Começar grátis", "Start free") : tr("Assinar", "Subscribe")}
                   </Link>
                 </div>
               </Reveal>
@@ -724,10 +746,9 @@ function PricingSection() {
           })}
         </div>
         <p className="mt-10 text-sm font-medium" style={{ color: "rgba(27,25,23,0.55)" }}>
-          Precisa de mais? O plano Enterprise tem clientes, usuários e revisores
-          ilimitados —{" "}
+          {tr("Precisa de mais? O plano Enterprise tem clientes, usuários e revisores ilimitados — ", "Need more? Enterprise includes unlimited clients, users, and reviewers — ")}
           <a href="mailto:contato@approove.app" className="font-bold underline underline-offset-4" style={{ color: ink }}>
-            fale com a gente
+            {tr("fale com a gente", "talk to us")}
           </a>
           .
         </p>
@@ -736,30 +757,27 @@ function PricingSection() {
   );
 }
 
-const faqs = [
-  {
-    question: "Meu cliente precisa criar uma conta para aprovar?",
-    answer:
-      "Não. O cliente recebe um link seguro e acessa o calendário direto do navegador, sem cadastro nem senha. Ele visualiza as artes, comenta e aprova em poucos cliques.",
-  },
-  {
-    question: "Posso testar antes de assinar?",
-    answer:
-      "Sim. O plano Free é gratuito para sempre e permite gerenciar um cliente com até três revisores ativos — o suficiente para validar o fluxo com um cliente real.",
-  },
-  {
-    question: "Quais formatos de conteúdo o Approove suporta?",
-    answer:
-      "Feed, Stories, Reels, Carrossel, LinkedIn e outros formatos personalizados. Cada material aceita imagens (JPEG, PNG, GIF, WebP, SVG) e vídeos MP4, com múltiplas versões por arte.",
-  },
-  {
-    question: "Posso mudar de plano depois?",
-    answer:
-      "Sim. O upgrade e o downgrade podem ser feitos a qualquer momento pelo portal de cobrança, e a mudança vale imediatamente para os limites do seu plano.",
-  },
-];
+function FaqSection({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const faqs = [
+    {
+      question: tr("Meu cliente precisa criar uma conta para aprovar?", "Does my client need an account to approve?"),
+      answer: tr("Não. O cliente recebe um link seguro e acessa o calendário direto do navegador, sem cadastro nem senha. Ele visualiza as artes, comenta e aprova em poucos cliques.", "No. The client receives a secure link and opens the calendar directly in the browser, with no signup or password. They review, comment, and approve in a few clicks."),
+    },
+    {
+      question: tr("Posso testar antes de assinar?", "Can I try it before subscribing?"),
+      answer: tr("Sim. O plano Free é gratuito para sempre e permite gerenciar um cliente com até três revisores ativos — o suficiente para validar o fluxo com um cliente real.", "Yes. The Free plan stays free forever and lets you manage one client with up to three active reviewers — enough to validate the workflow with a real client."),
+    },
+    {
+      question: tr("Quais formatos de conteúdo o Approove suporta?", "Which content formats does Approove support?"),
+      answer: tr("Feed, Stories, Reels, Carrossel, LinkedIn e outros formatos personalizados. Cada material aceita imagens (JPEG, PNG, GIF, WebP, SVG) e vídeos MP4, com múltiplas versões por arte.", "Feeds, Stories, Reels, carousels, LinkedIn, and custom formats. Each asset supports images (JPEG, PNG, GIF, WebP, SVG) and MP4 video, with multiple versions per creative."),
+    },
+    {
+      question: tr("Posso mudar de plano depois?", "Can I change plans later?"),
+      answer: tr("Sim. O upgrade e o downgrade podem ser feitos a qualquer momento pelo portal de cobrança, e a mudança vale imediatamente para os limites do seu plano.", "Yes. You can upgrade or downgrade at any time in the billing portal, and the new plan limits apply immediately."),
+    },
+  ];
 
-function FaqSection() {
   return (
     <section id="faq" className="scroll-mt-16 border-t" style={{ borderColor: "rgba(27,25,23,0.12)" }}>
       <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
@@ -768,7 +786,7 @@ function FaqSection() {
             <Eyebrow>FAQ</Eyebrow>
             <Reveal bare>
               <h2 className="mt-6 text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1] tracking-[-0.03em]">
-                <MaskedWords text="Perguntas frequentes." />
+                <MaskedWords text={tr("Perguntas frequentes.", "Frequently asked questions.")} />
               </h2>
             </Reveal>
           </div>
@@ -799,14 +817,16 @@ function FaqSection() {
   );
 }
 
-function FinalCta() {
+function FinalCta({ locale }: { locale: AppLocale }) {
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+
   return (
     <section style={{ backgroundColor: ink, color: cream }}>
       <div className="mx-auto max-w-7xl px-5 pb-10 pt-24 sm:px-8">
         <Reveal bare>
           <h2 className="max-w-5xl text-[clamp(2.5rem,7vw,6rem)] font-extrabold leading-[0.95] tracking-[-0.04em]">
             <MaskedWords
-              text="Aprove o próximo calendário sem uma única mensagem no WhatsApp."
+              text={tr("Aprove o próximo calendário sem uma única mensagem no WhatsApp.", "Approve your next calendar without a single WhatsApp message.")}
               accents={{ "WhatsApp.": green }}
             />
           </h2>
@@ -814,10 +834,10 @@ function FinalCta() {
         <Reveal delay={120}>
           <div className="mt-12 flex flex-wrap items-center gap-4">
             <PillLink href="/signup" light>
-              Começar grátis
+              {tr("Começar grátis", "Start free")}
             </PillLink>
             <p className="text-sm font-medium" style={{ color: "rgba(244,233,225,0.5)" }}>
-              Plano Free para sempre · Sem cartão de crédito
+              {tr("Plano Free para sempre · Sem cartão de crédito", "Free plan forever · No credit card")}
             </p>
           </div>
         </Reveal>
@@ -827,17 +847,17 @@ function FinalCta() {
             <div className="max-w-xs">
               <Eyebrow light>Approove</Eyebrow>
               <p className="mt-3 text-sm font-medium" style={{ color: "rgba(244,233,225,0.55)" }}>
-                Aprovação de conteúdo para agências e criadores.
+                {tr("Aprovação de conteúdo para agências e criadores.", "Content approval for agencies and creators.")}
               </p>
             </div>
             <nav className="grid grid-cols-2 gap-x-14 gap-y-3 text-sm font-semibold sm:text-right">
               {[
-                ["#funcionalidades", "Funcionalidades"],
-                ["#precos", "Preços"],
-                ["/login", "Entrar"],
-                ["/signup", "Criar conta"],
-                ["/termos", "Termos de Uso"],
-                ["/privacidade", "Privacidade"],
+                ["#funcionalidades", tr("Funcionalidades", "Features")],
+                ["#precos", tr("Preços", "Pricing")],
+                ["/login", tr("Entrar", "Log in")],
+                ["/signup", tr("Criar conta", "Create account")],
+                ["/termos", tr("Termos de Uso", "Terms of Use")],
+                ["/privacidade", tr("Privacidade", "Privacy")],
               ].map(([href, label]) =>
                 href.startsWith("#") ? (
                   <a key={href} href={href} className="opacity-60 transition-opacity hover:opacity-100">
@@ -863,31 +883,31 @@ function FinalCta() {
           </p>
         </Parallax>
         <p className="mt-8 pb-2 text-center text-xs font-medium" style={{ color: "rgba(244,233,225,0.35)" }}>
-          © {new Date().getFullYear()} Approove. Todos os direitos reservados.
+          © {new Date().getFullYear()} Approove. {tr("Todos os direitos reservados.", "All rights reserved.")}
         </p>
       </div>
     </section>
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ locale }: { locale: AppLocale }) {
   return (
     <div
       className="lp flex min-h-screen flex-col antialiased"
       style={{ backgroundColor: cream, color: ink }}
     >
       <Preloader />
-      <Navbar />
+      <Navbar locale={locale} />
       <main className="flex-1">
-        <Hero />
-        <Marquee />
-        <StatsSection />
-        <HowItWorksSection />
-        <FeaturesSection />
-        <PricingSection />
-        <FaqSection />
+        <Hero locale={locale} />
+        <Marquee locale={locale} />
+        <StatsSection locale={locale} />
+        <HowItWorksSection locale={locale} />
+        <FeaturesSection locale={locale} />
+        <PricingSection locale={locale} />
+        <FaqSection locale={locale} />
       </main>
-      <FinalCta />
+      <FinalCta locale={locale} />
     </div>
   );
 }

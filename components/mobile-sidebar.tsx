@@ -10,15 +10,18 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Clientes", href: "/dashboard/clients", icon: Users },
-  { name: "Time", href: "/dashboard/team", icon: Building2 },
-  { name: "Configurações", href: "/dashboard/settings", icon: Settings },
-];
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export function MobileSidebar() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const navigation = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: tr("Clientes", "Clients"), href: "/dashboard/clients", icon: Users },
+    { name: tr("Time", "Team"), href: "/dashboard/team", icon: Building2 },
+    { name: tr("Configurações", "Settings"), href: "/dashboard/settings", icon: Settings },
+  ];
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -85,7 +88,7 @@ export function MobileSidebar() {
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors"
           >
             <LogOut className="h-4 w-4" />
-            Sair
+            {tr("Sair", "Log out")}
           </button>
         </div>
       </SheetContent>

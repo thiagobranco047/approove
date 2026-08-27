@@ -7,8 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export default function NewClientPage() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -55,12 +59,12 @@ export default function NewClientPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Erro ao criar cliente");
+        throw new Error(data.error || tr("Erro ao criar cliente", "Unable to create client"));
       }
 
       router.push("/dashboard/clients");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setError(err instanceof Error ? err.message : tr("Erro desconhecido", "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -73,17 +77,17 @@ export default function NewClientPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Novo Cliente</h1>
+          <h1 className="text-2xl font-bold">{tr("Novo Cliente", "New client")}</h1>
           <p className="text-sm text-muted-foreground">
-            Preencha os dados para criar um novo calendário editorial
+            {tr("Preencha os dados para criar um novo calendário editorial", "Enter the details to create a new editorial calendar")}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Informações Básicas</CardTitle>
-          <CardDescription>Dados principais do cliente</CardDescription>
+          <CardTitle>{tr("Informações Básicas", "Basic information")}</CardTitle>
+          <CardDescription>{tr("Dados principais do cliente", "Main client details")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -95,7 +99,7 @@ export default function NewClientPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome da Empresa *</Label>
+                <Label htmlFor="name">{tr("Nome da Empresa *", "Company name *")}</Label>
                 <Input
                   id="name"
                   name="name"
@@ -107,7 +111,7 @@ export default function NewClientPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug da URL *</Label>
+                <Label htmlFor="slug">{tr("Slug da URL *", "URL slug *")}</Label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground whitespace-nowrap">
                     /c/
@@ -151,18 +155,18 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
+              <Label htmlFor="address">{tr("Endereço", "Address")}</Label>
               <Input
                 id="address"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="Rua, Número, Bairro, Cidade - UF"
+                placeholder={tr("Rua, Número, Bairro, Cidade - UF", "Street, number, city, state")}
               />
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="font-medium mb-4">Redes Sociais</h3>
+              <h3 className="font-medium mb-4">{tr("Redes Sociais", "Social media")}</h3>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="instagram">Instagram</Label>
@@ -172,7 +176,7 @@ export default function NewClientPage() {
                     type="url"
                     value={formData.instagram}
                     onChange={handleChange}
-                    placeholder="URL do Instagram"
+                    placeholder={tr("URL do Instagram", "Instagram URL")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -183,7 +187,7 @@ export default function NewClientPage() {
                     type="url"
                     value={formData.facebook}
                     onChange={handleChange}
-                    placeholder="URL do Facebook"
+                    placeholder={tr("URL do Facebook", "Facebook URL")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -194,7 +198,7 @@ export default function NewClientPage() {
                     type="url"
                     value={formData.linkedin}
                     onChange={handleChange}
-                    placeholder="URL do LinkedIn"
+                    placeholder={tr("URL do LinkedIn", "LinkedIn URL")}
                   />
                 </div>
               </div>
@@ -207,16 +211,16 @@ export default function NewClientPage() {
                 onClick={() => router.back()}
                 className="flex-1"
               >
-                Cancelar
+                {tr("Cancelar", "Cancel")}
               </Button>
               <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Criando...
+                    {tr("Criando...", "Creating...")}
                   </>
                 ) : (
-                  "Criar Cliente"
+                  tr("Criar Cliente", "Create client")
                 )}
               </Button>
             </div>

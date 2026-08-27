@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { z } from "zod";
 import { requireOrganization } from "@/lib/auth";
 import { absoluteUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { currencyForLocale } from "@/lib/pricing";
+import { getRequestLocale } from "@/lib/request-locale";
+
+function isCurrencyMismatch(error: unknown) {
+  return (
+    error instanceof Stripe.errors.StripeInvalidRequestError &&
+    /currency/i.test(error.message)
+  );
+}
 
 const checkoutSchema = z.object({
   plan: z.enum(["starter", "pro", "studio"]),
@@ -54,8 +64,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // O Price é multi-moeda (USD padrão + opção BRL). Sem `currency` explícito,
+    // o Checkout usa sempre a moeda padrão (USD) e o Adaptive Pricing não converte
+    // para BRL, porque a moeda local já existe em `currency_options`. Enviamos a
+    // moeda do locale para o Checkout cobrar o mesmo valor que foi anunciado.
+    const currency = currencyForLocale(await getRequestLocale());
+
+    const params: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
+      locale: "auto",
+      currency,
       customer: stripeCustomerId,
       line_items: [{ price, quantity: 1 }],
       success_url: absoluteUrl("/dashboard/settings?billing=success"),
@@ -64,7 +82,22 @@ export async function POST(request: NextRequest) {
       subscription_data: {
         metadata: { app: "approove", organizationId: organization.id, plan },
       },
-    });
+    };
+
+    let session;
+
+    try {
+      session = await stripe.checkout.sessions.create(params);
+    } catch (error) {
+      // Um cliente que já assinou fica travado na moeda original; nesse caso o
+      // Stripe recusa a moeda nova e reabrimos o Checkout na moeda do cliente.
+      if (!isCurrencyMismatch(error)) throw error;
+
+      session = await stripe.checkout.sessions.create({
+        ...params,
+        currency: undefined,
+      });
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

@@ -20,31 +20,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
-const navigation = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Clientes",
-    href: "/dashboard/clients",
-    icon: Users,
-  },
-  {
-    name: "Time",
-    href: "/dashboard/team",
-    icon: Building2,
-  },
-  {
-    name: "Configurações",
-    href: "/dashboard/settings",
-    icon: Settings,
-  },
-];
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export function AppSidebar() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
+  const navigation = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: tr("Clientes", "Clients"), href: "/dashboard/clients", icon: Users },
+    { name: tr("Time", "Team"), href: "/dashboard/team", icon: Building2 },
+    { name: tr("Configurações", "Settings"), href: "/dashboard/settings", icon: Settings },
+  ];
   const pathname = usePathname();
   const { data: session } = useSession();
 
@@ -100,7 +87,7 @@ export function AppSidebar() {
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left overflow-hidden">
-                <p className="font-medium truncate">{user?.name || "Usuário"}</p>
+                <p className="font-medium truncate">{user?.name || tr("Usuário", "User")}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {user?.email}
                 </p>
@@ -112,7 +99,7 @@ export function AppSidebar() {
             <DropdownMenuItem asChild>
               <Link href="/dashboard/settings">
                 <Settings className="mr-2 h-4 w-4" />
-                Configurações
+                {tr("Configurações", "Settings")}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -121,7 +108,7 @@ export function AppSidebar() {
               className="text-destructive focus:text-destructive"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              {tr("Sair", "Log out")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

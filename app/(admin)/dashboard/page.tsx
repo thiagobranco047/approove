@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { getProductionStageLabel, getProductionStageStyle } from "@/lib/production-stages";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 interface ClientData {
   id: string;
@@ -71,18 +73,18 @@ const COLORS = {
 };
 
 export default function DashboardPage() {
+  const locale = useLocale();
+  const tr = useCallback(
+    (pt: string, en: string) => localizedText(locale, pt, en),
+    [locale]
+  );
   const router = useRouter();
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskData[]>([]);
 
-  useEffect(() => {
-    fetchClients();
-    fetchMyTasks();
-  }, []);
-
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     setLoadError(null);
     try {
       const response = await fetch("/api/clients");
@@ -91,19 +93,19 @@ export default function DashboardPage() {
         setLoadError(
           typeof data.error === "string"
             ? data.error
-            : "Erro ao carregar clientes. Tente novamente."
+            : tr("Erro ao carregar clientes. Tente novamente.", "Unable to load clients. Please try again.")
         );
         return;
       }
       setClients(data.clients);
     } catch {
-      setLoadError("Erro de conexão. Verifique sua rede e tente novamente.");
+      setLoadError(tr("Erro de conexão. Verifique sua rede e tente novamente.", "Connection error. Check your network and try again."));
     } finally {
       setLoading(false);
     }
-  };
+  }, [tr]);
 
-  const fetchMyTasks = async () => {
+  const fetchMyTasks = useCallback(async () => {
     try {
       const response = await fetch("/api/tasks/mine");
       if (!response.ok) return;
@@ -112,7 +114,12 @@ export default function DashboardPage() {
     } catch {
       // tasks are optional on dashboard
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchClients();
+    fetchMyTasks();
+  }, [fetchClients, fetchMyTasks]);
 
   const stats: DashboardStats = clients.reduce(
     (acc, client) => ({
@@ -126,16 +133,16 @@ export default function DashboardPage() {
   );
 
   const pieData = [
-    { name: "Aprovadas", value: stats.approved, color: COLORS.approved },
-    { name: "Pendentes", value: stats.pending, color: COLORS.pending },
-    { name: "Ajustes", value: stats.adjustments, color: COLORS.adjustments },
+    { name: tr("Aprovadas", "Approved"), value: stats.approved, color: COLORS.approved },
+    { name: tr("Pendentes", "Pending"), value: stats.pending, color: COLORS.pending },
+    { name: tr("Ajustes", "Changes"), value: stats.adjustments, color: COLORS.adjustments },
   ].filter((d) => d.value > 0);
 
   const barData = clients.map((client) => ({
     name: client.name.length > 12 ? client.name.slice(0, 12) + "…" : client.name,
-    Aprovadas: client.stats.approved,
-    Pendentes: client.stats.pending,
-    Ajustes: client.stats.adjustments,
+    approved: client.stats.approved,
+    pending: client.stats.pending,
+    adjustments: client.stats.adjustments,
   }));
 
   const approvalRate =
@@ -177,17 +184,17 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Visão geral do seu conteúdo e clientes
+            {tr("Visão geral do seu conteúdo e clientes", "Overview of your content and clients")}
           </p>
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <AlertTriangle className="h-12 w-12 text-orange-500 mb-4" />
-            <p className="text-lg font-medium">Não foi possível carregar o dashboard</p>
+            <p className="text-lg font-medium">{tr("Não foi possível carregar o dashboard", "Unable to load the dashboard")}</p>
             <p className="text-sm text-muted-foreground mt-2 max-w-md">{loadError}</p>
             <Button className="mt-4" onClick={() => { setLoading(true); fetchClients(); }}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Tentar novamente
+              {tr("Tentar novamente", "Try again")}
             </Button>
           </CardContent>
         </Card>
@@ -201,12 +208,12 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Visão geral do seu conteúdo e clientes
+            {tr("Visão geral do seu conteúdo e clientes", "Overview of your content and clients")}
           </p>
         </div>
         <Button onClick={() => router.push("/dashboard/clients/new")}>
           <Plus className="mr-2 h-4 w-4" />
-          Novo Cliente
+          {tr("Novo Cliente", "New client")}
         </Button>
       </div>
 
@@ -215,7 +222,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
-              Minhas tarefas
+              {tr("Minhas tarefas", "My tasks")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -256,7 +263,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Clientes
+                  {tr("Clientes", "Clients")}
                 </p>
                 <p className="text-3xl font-bold">{stats.totalClients}</p>
               </div>
@@ -272,7 +279,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Aprovadas
+                  {tr("Aprovadas", "Approved")}
                 </p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                   {stats.approved}
@@ -290,7 +297,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Pendentes
+                  {tr("Pendentes", "Pending")}
                 </p>
                 <p className="text-3xl font-bold">{stats.pending}</p>
               </div>
@@ -306,7 +313,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Ajustes
+                  {tr("Ajustes", "Changes")}
                 </p>
                 <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                   {stats.adjustments}
@@ -327,7 +334,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Distribuição de Status
+                {tr("Distribuição de Status", "Status distribution")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -355,7 +362,7 @@ export default function DashboardPage() {
                   <div className="text-center mb-4">
                     <p className="text-3xl font-bold">{approvalRate}%</p>
                     <p className="text-xs text-muted-foreground">
-                      Taxa de aprovação
+                      {tr("Taxa de aprovação", "Approval rate")}
                     </p>
                   </div>
                   {pieData.map((item) => (
@@ -381,7 +388,7 @@ export default function DashboardPage() {
           {barData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Status por Cliente</CardTitle>
+                <CardTitle className="text-lg">{tr("Status por Cliente", "Status by client")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-52">
@@ -391,9 +398,9 @@ export default function DashboardPage() {
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Bar dataKey="Aprovadas" fill={COLORS.approved} radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="Pendentes" fill={COLORS.pending} radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="Ajustes" fill={COLORS.adjustments} radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="approved" name={tr("Aprovadas", "Approved")} fill={COLORS.approved} radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="pending" name={tr("Pendentes", "Pending")} fill={COLORS.pending} radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="adjustments" name={tr("Ajustes", "Changes")} fill={COLORS.adjustments} radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -406,10 +413,10 @@ export default function DashboardPage() {
       {/* Clients List */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Clientes</h2>
+          <h2 className="text-xl font-semibold">{tr("Clientes", "Clients")}</h2>
           <Link href="/dashboard/clients">
             <Button variant="ghost" size="sm">
-              Ver todos
+              {tr("Ver todos", "View all")}
             </Button>
           </Link>
         </div>
@@ -418,16 +425,16 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Users className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Nenhum cliente cadastrado</p>
+              <p className="text-lg font-medium">{tr("Nenhum cliente cadastrado", "No clients yet")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Comece adicionando seu primeiro cliente
+                {tr("Comece adicionando seu primeiro cliente", "Start by adding your first client")}
               </p>
               <Button
                 className="mt-4"
                 onClick={() => router.push("/dashboard/clients/new")}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Cliente
+                {tr("Adicionar Cliente", "Add client")}
               </Button>
             </CardContent>
           </Card>
@@ -460,7 +467,7 @@ export default function DashboardPage() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 flex-shrink-0"
-                        title="Abrir calendário (visão do cliente)"
+                        title={tr("Abrir calendário (visão do cliente)", "Open calendar (client view)")}
                         onClick={(e) => {
                           e.stopPropagation();
                           openClientPage(client);
@@ -474,7 +481,7 @@ export default function DashboardPage() {
                     <div className="mb-3">
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-muted-foreground">
-                          Progresso de aprovação
+                          {tr("Progresso de aprovação", "Approval progress")}
                         </span>
                         <span className="font-medium">{approvedPct}%</span>
                       </div>
@@ -491,17 +498,17 @@ export default function DashboardPage() {
                         variant="secondary"
                         className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400 hover:bg-green-100"
                       >
-                        {client.stats.approved} aprovadas
+                        {client.stats.approved} {tr("aprovadas", "approved")}
                       </Badge>
                       <Badge variant="secondary">
-                        {client.stats.pending} pendentes
+                        {client.stats.pending} {tr("pendentes", "pending")}
                       </Badge>
                       {client.stats.adjustments > 0 && (
                         <Badge
                           variant="secondary"
                           className="bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 hover:bg-orange-100"
                         >
-                          {client.stats.adjustments} ajustes
+                          {client.stats.adjustments} {tr("ajustes", "changes")}
                         </Badge>
                       )}
                     </div>

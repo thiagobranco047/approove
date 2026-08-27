@@ -10,8 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 function LoginForm() {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -35,14 +39,14 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError("Email ou senha incorretos");
+        setError(tr("Email ou senha incorretos", "Incorrect email or password"));
         return;
       }
 
       router.push(callbackUrl);
       router.refresh();
     } catch {
-      setError("Erro ao fazer login. Tente novamente.");
+      setError(tr("Erro ao fazer login. Tente novamente.", "Unable to log in. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -60,10 +64,10 @@ function LoginForm() {
           Approove
         </h1>
         <h2 className="text-2xl font-semibold tracking-tight">
-          Bem-vindo de volta
+          {tr("Bem-vindo de volta", "Welcome back")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Entre com sua conta para acessar o dashboard
+          {tr("Entre com sua conta para acessar o dashboard", "Log in to access your dashboard")}
         </p>
       </div>
 
@@ -95,7 +99,7 @@ function LoginForm() {
             />
           </svg>
         )}
-        Continuar com Google
+        {tr("Continuar com Google", "Continue with Google")}
       </Button>
 
       <div className="relative">
@@ -104,7 +108,7 @@ function LoginForm() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            ou continue com email
+            {tr("ou continue com email", "or continue with email")}
           </span>
         </div>
       </div>
@@ -131,12 +135,12 @@ function LoginForm() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password">{tr("Senha", "Password")}</Label>
             <Link
               href="/forgot-password"
               className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
-              Esqueceu sua senha?
+              {tr("Esqueceu sua senha?", "Forgot your password?")}
             </Link>
           </div>
           <Input
@@ -154,21 +158,21 @@ function LoginForm() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Entrando...
+              {tr("Entrando...", "Logging in...")}
             </>
           ) : (
-            "Entrar"
+            tr("Entrar", "Log in")
           )}
         </Button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Não tem uma conta?{" "}
+        {tr("Não tem uma conta?", "Don’t have an account?")}{" "}
         <Link
           href="/signup"
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
-          Criar conta grátis
+          {tr("Criar conta grátis", "Create a free account")}
         </Link>
       </p>
     </div>
