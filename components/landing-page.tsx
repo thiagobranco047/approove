@@ -28,7 +28,6 @@ function planPricing(locale: AppLocale): Record<string, { price: string; period?
   const paid = (plan: PaidPlan) => planPrice(plan, locale);
 
   return {
-    free: { price: localizedText(locale, "Grátis", "Free") },
     starter: paid("starter"),
     pro: paid("pro"),
     studio: paid("studio"),
@@ -131,7 +130,7 @@ function Navbar({ locale }: { locale: AppLocale }) {
             href="/signup"
             className="inline-flex items-center rounded-full bg-[#1B1917] px-5 py-2.5 text-sm font-semibold text-[#F4E9E1] transition-colors duration-300 hover:bg-[#0072E3] hover:text-white"
           >
-            {tr("Começar grátis", "Start free")}
+            {tr("Testar grátis", "Start free trial")}
           </Link>
         </div>
       </div>
@@ -196,7 +195,7 @@ function Hero({ locale }: { locale: AppLocale }) {
           className="fade-up flex flex-wrap items-center gap-3"
           style={{ "--d": "1500ms" } as React.CSSProperties}
         >
-          <PillLink href="/signup">{tr("Começar grátis", "Start free")}</PillLink>
+          <PillLink href="/signup">{tr("Testar grátis", "Start free trial")}</PillLink>
           <PillLink href="#precos" variant="outline">
             {tr("Ver planos", "View plans")}
           </PillLink>
@@ -206,7 +205,7 @@ function Hero({ locale }: { locale: AppLocale }) {
         className="fade-up mt-4 text-sm font-medium"
         style={{ "--d": "1650ms", color: "rgba(27,25,23,0.45)" } as React.CSSProperties}
       >
-        {tr("Plano Free para sempre · Sem cartão de crédito", "Free plan forever · No credit card")}
+        {tr("15 dias grátis · Cancele quando quiser", "15 days free · Cancel anytime")}
       </p>
       <Reveal className="mt-16">
         <Parallax speed={0.06}>
@@ -644,13 +643,12 @@ function FeaturesSection({ locale }: { locale: AppLocale }) {
   );
 }
 
-const planOrder = ["free", "starter", "pro", "studio"] as const;
+const planOrder = ["starter", "pro", "studio"] as const;
 
 function PricingSection({ locale }: { locale: AppLocale }) {
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const pricingByPlan = planPricing(locale);
   const planCopy: Record<(typeof planOrder)[number], { name: string; description: string; highlighted?: boolean }> = {
-    free: { name: "Free", description: tr("Para testar com seu primeiro cliente", "For testing with your first client") },
     starter: { name: "Starter", description: tr("Para quem está começando a carteira", "For a growing client roster") },
     pro: { name: "Pro", description: tr("Para agências em crescimento", "For growing agencies"), highlighted: true },
     studio: { name: "Studio", description: tr("Para operações com muitos clientes", "For operations with many clients") },
@@ -665,7 +663,7 @@ function PricingSection({ locale }: { locale: AppLocale }) {
             <MaskedWords text={tr("Planos que crescem com a sua carteira.", "Plans that grow with your client roster.")} />
           </h2>
         </Reveal>
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {planOrder.map((plan, i) => {
             const { name, description, highlighted } = planCopy[plan];
             const limits = PLAN_LIMITS[plan];
@@ -738,7 +736,7 @@ function PricingSection({ locale }: { locale: AppLocale }) {
                         : "bg-[#1B1917] text-[#F4E9E1] hover:bg-[#0072E3] hover:text-white"
                     }`}
                   >
-                    {plan === "free" ? tr("Começar grátis", "Start free") : tr("Assinar", "Subscribe")}
+                    {tr("Testar grátis por 15 dias", "Try free for 15 days")}
                   </Link>
                 </div>
               </Reveal>
@@ -766,7 +764,7 @@ function FaqSection({ locale }: { locale: AppLocale }) {
     },
     {
       question: tr("Posso testar antes de assinar?", "Can I try it before subscribing?"),
-      answer: tr("Sim. O plano Free é gratuito para sempre e permite gerenciar um cliente com até três revisores ativos — o suficiente para validar o fluxo com um cliente real.", "Yes. The Free plan stays free forever and lets you manage one client with up to three active reviewers — enough to validate the workflow with a real client."),
+      answer: tr("Sim. Todos os planos começam com 15 dias grátis — você adiciona um cartão, mas nada é cobrado durante o período de teste e pode cancelar a qualquer momento antes da primeira cobrança.", "Yes. Every plan starts with a 15-day free trial — you add a card, but nothing is charged during the trial and you can cancel anytime before the first charge."),
     },
     {
       question: tr("Quais formatos de conteúdo o Approove suporta?", "Which content formats does Approove support?"),
@@ -834,10 +832,10 @@ function FinalCta({ locale }: { locale: AppLocale }) {
         <Reveal delay={120}>
           <div className="mt-12 flex flex-wrap items-center gap-4">
             <PillLink href="/signup" light>
-              {tr("Começar grátis", "Start free")}
+              {tr("Testar grátis", "Start free trial")}
             </PillLink>
             <p className="text-sm font-medium" style={{ color: "rgba(244,233,225,0.5)" }}>
-              {tr("Plano Free para sempre · Sem cartão de crédito", "Free plan forever · No credit card")}
+              {tr("15 dias grátis · Cancele quando quiser", "15 days free · Cancel anytime")}
             </p>
           </div>
         </Reveal>

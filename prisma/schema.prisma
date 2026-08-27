@@ -91,6 +91,7 @@ model Organization {
   subscriptionStatus   String?
   plan                 String    @default("free")
   currentPeriodEnd     DateTime?
+  trialUsedAt          DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
