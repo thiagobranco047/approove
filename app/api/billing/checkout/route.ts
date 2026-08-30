@@ -17,12 +17,13 @@ function isCurrencyMismatch(error: unknown) {
 }
 
 const checkoutSchema = z.object({
-  plan: z.enum(["starter", "pro", "studio"]),
+  plan: z.enum(["solo", "starter", "pro", "studio"]),
   // "paywall" = veio da tela pós-signup; muda os destinos de retorno.
   from: z.enum(["paywall", "settings"]).default("settings"),
 });
 
 const priceByPlan = {
+  solo: process.env.STRIPE_PRICE_SOLO,
   starter: process.env.STRIPE_PRICE_STARTER,
   pro: process.env.STRIPE_PRICE_PRO,
   studio: process.env.STRIPE_PRICE_STUDIO,

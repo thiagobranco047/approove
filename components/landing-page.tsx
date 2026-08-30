@@ -28,6 +28,7 @@ function planPricing(locale: AppLocale): Record<string, { price: string; period?
   const paid = (plan: PaidPlan) => planPrice(plan, locale);
 
   return {
+    solo: paid("solo"),
     starter: paid("starter"),
     pro: paid("pro"),
     studio: paid("studio"),
@@ -237,7 +238,7 @@ function ApprovalMockup({ locale }: { locale: AppLocale }) {
           className="flex-1 rounded-full px-4 py-1.5 text-center text-xs font-medium"
           style={{ backgroundColor: "rgba(27,25,23,0.05)", color: "rgba(27,25,23,0.5)" }}
         >
-          approove.app/c/cliente-acme
+          approoveapp.com/c/cliente-acme
         </div>
       </div>
 
@@ -456,7 +457,7 @@ function getSteps(locale: AppLocale): {
           className="flex items-center justify-between gap-3 rounded-full border px-4 py-2.5 text-xs font-semibold"
           style={{ borderColor: "rgba(27,25,23,0.15)", color: "rgba(27,25,23,0.6)" }}
         >
-          <span className="truncate">approove.app/c/cliente-acme?t=•••••</span>
+          <span className="truncate">approoveapp.com/c/cliente-acme?t=•••••</span>
           <span className="shrink-0 rounded-full px-3 py-1 text-[11px] font-bold text-white" style={{ backgroundColor: ink }}>
             {tr("Copiar", "Copy")}
           </span>
@@ -643,12 +644,13 @@ function FeaturesSection({ locale }: { locale: AppLocale }) {
   );
 }
 
-const planOrder = ["starter", "pro", "studio"] as const;
+const planOrder = ["solo", "starter", "pro", "studio"] as const;
 
 function PricingSection({ locale }: { locale: AppLocale }) {
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const pricingByPlan = planPricing(locale);
   const planCopy: Record<(typeof planOrder)[number], { name: string; description: string; highlighted?: boolean }> = {
+    solo: { name: "Solo", description: tr("Para freelancers com os primeiros clientes", "For freelancers taking on their first clients") },
     starter: { name: "Starter", description: tr("Para quem está começando a carteira", "For a growing client roster") },
     pro: { name: "Pro", description: tr("Para agências em crescimento", "For growing agencies"), highlighted: true },
     studio: { name: "Studio", description: tr("Para operações com muitos clientes", "For operations with many clients") },
@@ -663,7 +665,7 @@ function PricingSection({ locale }: { locale: AppLocale }) {
             <MaskedWords text={tr("Planos que crescem com a sua carteira.", "Plans that grow with your client roster.")} />
           </h2>
         </Reveal>
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {planOrder.map((plan, i) => {
             const { name, description, highlighted } = planCopy[plan];
             const limits = PLAN_LIMITS[plan];
@@ -745,7 +747,7 @@ function PricingSection({ locale }: { locale: AppLocale }) {
         </div>
         <p className="mt-10 text-sm font-medium" style={{ color: "rgba(27,25,23,0.55)" }}>
           {tr("Precisa de mais? O plano Enterprise tem clientes, usuários e revisores ilimitados — ", "Need more? Enterprise includes unlimited clients, users, and reviewers — ")}
-          <a href="mailto:contato@approove.app" className="font-bold underline underline-offset-4" style={{ color: ink }}>
+          <a href="mailto:contato@approoveapp.com" className="font-bold underline underline-offset-4" style={{ color: ink }}>
             {tr("fale com a gente", "talk to us")}
           </a>
           .

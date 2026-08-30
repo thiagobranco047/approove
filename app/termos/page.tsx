@@ -148,7 +148,7 @@ export default function TermosPage() {
       <LegalSection title="11. Contato">
         <p>
           Dúvidas sobre estes Termos podem ser enviadas para{" "}
-          <a href="mailto:contato@approove.app">contato@approove.app</a>.
+          <a href="mailto:contato@approoveapp.com">contato@approoveapp.com</a>.
         </p>
       </LegalSection>
     </LegalPageLayout>
