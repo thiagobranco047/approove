@@ -46,6 +46,7 @@ export function SubscribePlans({
   };
 
   const plans: Array<{ id: PaidPlan; name: string; description: string; highlighted?: boolean }> = [
+    { id: "solo", name: "Solo", description: tr("Para freelancers com os primeiros clientes", "For freelancers taking on their first clients") },
     { id: "starter", name: "Starter", description: tr("Para quem está começando a carteira", "For a growing client roster") },
     { id: "pro", name: "Pro", description: tr("Para agências em crescimento", "For growing agencies"), highlighted: true },
     { id: "studio", name: "Studio", description: tr("Para operações com muitos clientes", "For operations with many clients") },
@@ -92,7 +93,7 @@ export function SubscribePlans({
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-5 py-12 sm:px-8">
+      <main className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         {canManageBilling ? (
           <>
             <div className="mx-auto max-w-2xl text-center">
@@ -120,7 +121,7 @@ export function SubscribePlans({
               </p>
             )}
 
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {plans.map((plan) => {
                 const { price, period } = planPrice(plan.id, locale);
 

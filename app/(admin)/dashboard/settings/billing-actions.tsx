@@ -27,6 +27,7 @@ export function BillingActions({
     return `${price}${period}`;
   };
   const plans = [
+    { id: "solo", name: "Solo", price: priceLabel("solo"), description: tr("Para freelancers com os primeiros clientes.", "For freelancers with their first clients.") },
     { id: "starter", name: "Starter", price: priceLabel("starter"), description: tr("Para equipes pequenas iniciando cobrança.", "For small teams getting started.") },
     { id: "pro", name: "Pro", price: priceLabel("pro"), description: tr("Para agências com operação recorrente.", "For agencies with recurring operations.") },
     { id: "studio", name: "Studio", price: priceLabel("studio"), description: tr("Para times maiores e mais clientes.", "For larger teams and client rosters.") },
@@ -64,7 +65,7 @@ export function BillingActions({
         </p>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {plans.map((plan) => {
           const isCurrentPlan = currentPlan === plan.id;
           const opensPortal = hasActiveSubscription && !isCurrentPlan;
