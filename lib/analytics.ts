@@ -45,6 +45,12 @@ export function saveConsent(choice: ConsentChoice) {
   }
 
   gtagPush("consent", "update", { analytics_storage: choice });
+
+  // O pageview inicial pode ter sido enviado com consent negado; reenvia ao aceitar.
+  if (choice === "granted") {
+    const { pathname, search } = window.location;
+    pageview(search ? `${pathname}${search}` : pathname);
+  }
 }
 
 /**

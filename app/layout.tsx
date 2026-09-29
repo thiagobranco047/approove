@@ -5,8 +5,10 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { getRequestLocale } from "@/lib/request-locale";
+import { AnalyticsRouteTracker } from "@/components/analytics-route-tracker";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { CookieConsent } from "@/components/cookie-consent";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,6 +35,9 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head>
+        <GoogleAnalytics />
+      </head>
       <body className={inter.className}>
         <LocaleProvider locale={locale}>
           <SessionProvider>
@@ -44,10 +49,12 @@ export default async function RootLayout({
             >
               {children}
               <CookieConsent />
+              <Suspense fallback={null}>
+                <AnalyticsRouteTracker />
+              </Suspense>
             </ThemeProvider>
           </SessionProvider>
         </LocaleProvider>
-        <GoogleAnalytics />
       </body>
     </html>
   );
