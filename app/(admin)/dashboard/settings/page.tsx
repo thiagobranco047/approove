@@ -7,6 +7,7 @@ import { getRequestLocale } from "@/lib/request-locale";
 
 const planLabels: Record<string, string> = {
   free: "Free",
+  solo: "Solo",
   starter: "Starter",
   pro: "Pro",
   studio: "Studio",

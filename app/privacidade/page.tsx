@@ -185,7 +185,7 @@ export default function PrivacidadePage() {
         <p>
           Dúvidas, solicitações ou reclamações sobre o tratamento de dados
           pessoais podem ser enviadas para{" "}
-          <a href="mailto:contato@approove.app">contato@approove.app</a>.
+          <a href="mailto:contato@approoveapp.com">contato@approoveapp.com</a>.
         </p>
       </LegalSection>
     </LegalPageLayout>

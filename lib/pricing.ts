@@ -1,6 +1,6 @@
 import type { AppLocale } from "@/lib/locale";
 
-export type PaidPlan = "starter" | "pro" | "studio";
+export type PaidPlan = "solo" | "starter" | "pro" | "studio";
 export type PlanCurrency = "usd" | "brl";
 
 /**
@@ -9,6 +9,7 @@ export type PlanCurrency = "usd" | "brl";
  * Rode `npm run check:prices` depois de alterar preços no Stripe.
  */
 export const PLAN_AMOUNTS: Record<PaidPlan, Record<PlanCurrency, number>> = {
+  solo: { usd: 1500, brl: 9700 },
   starter: { usd: 2500, brl: 19700 },
   pro: { usd: 7500, brl: 49700 },
   studio: { usd: 15000, brl: 99700 },

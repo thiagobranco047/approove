@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
 export function planFromPrice(priceId: string | null | undefined) {
+  if (priceId === process.env.STRIPE_PRICE_SOLO) return "solo";
   if (priceId === process.env.STRIPE_PRICE_STARTER) return "starter";
   if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
   if (priceId === process.env.STRIPE_PRICE_STUDIO) return "studio";

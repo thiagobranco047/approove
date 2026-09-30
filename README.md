@@ -189,6 +189,7 @@ Objetos sandbox criados para este app:
 
 | Plano | Produto Stripe | Preço |
 |-------|----------------|-------|
+| Solo | `Approove SaaS - Solo` | US$15/mês |
 | Starter | `Approove SaaS - Starter` | US$25/mês |
 | Pro | `Approove SaaS - Pro` | US$75/mês |
 | Studio | `Approove SaaS - Studio` | US$150/mês |
@@ -197,6 +198,7 @@ Cada Price usa USD como moeda padrão e inclui uma opção manual para o Brasil:
 
 | Plano | Brasil |
 |---|---:|
+| Solo | R$97/mês |
 | Starter | R$197/mês |
 | Pro | R$497/mês |
 | Studio | R$997/mês |
@@ -400,26 +402,27 @@ Documento de referência para landing page, billing (Stripe) e limites por organ
 
 | Plano | Preço/mês | Anual (~17% off) | Clientes | Foco |
 |-------|-----------|------------------|----------|------|
-| 🟢 **Starter** | R$ 197 | R$ 1.970 (~R$ 164/mês) | até 5 | Freelancer / micro agência |
+| ⚪ **Solo** | R$ 97 | — | até 2 | **Porta de entrada** — freelancer com os primeiros clientes |
+| 🟢 **Starter** | R$ 197 | R$ 1.970 (~R$ 164/mês) | até 5 | Micro agência com carteira em formação |
 | 🔵 **Agency** | R$ 497 | R$ 4.970 (~R$ 414/mês) | até 15 | **Plano âncora** — agência em crescimento |
 | 🟣 **Studio** | R$ 997 | R$ 9.970 (~R$ 831/mês) | até 40 | Operação madura, volume e export |
 | ⚫ **Enterprise** | a partir de R$ 2.490 | contrato anual | ilimitado* | White-label, SLA, custom |
 
 \*Enterprise: faixas negociadas (100+ clientes, SSO, região de dados, etc.).
 
-**Trial:** 14 dias no plano Agency (self-serve). Enterprise sob consulta comercial.
+**Trial:** 15 dias em qualquer plano self-serve, com cartão obrigatório e uma única vez por organização (`Organization.trialUsedAt`). Enterprise sob consulta comercial.
 
 **Overage (opcional):** +R$ 29/mês por cliente extra (Starter/Agency) · +R$ 49 por 10 GB de storage adicional.
 
-> Referência internacional (futuro): Starter ~US$ 39 · Agency ~US$ 89 · Studio ~US$ 179 · Enterprise US$ 449+.
+> Referência internacional (futuro): Solo ~US$ 15 · Starter ~US$ 39 · Agency ~US$ 89 · Studio ~US$ 179 · Enterprise US$ 449+.
 
 ### Limites por plano
 
-| Recurso | Starter | Agency | Studio | Enterprise |
-|---------|---------|--------|--------|------------|
-| Clientes | 5 | 15 | 40 | Ilimitado |
-| Usuários da agência | 2 | 5 | 15 | Ilimitado |
-| Revisores convidados | 10 ativos | Ilimitado | Ilimitado | Ilimitado |
+| Recurso | Solo | Starter | Agency | Studio | Enterprise |
+|---------|------|---------|--------|--------|------------|
+| Clientes | 2 | 5 | 15 | 40 | Ilimitado |
+| Usuários da agência | 1 | 2 | 5 | 15 | Ilimitado |
+| Revisores convidados | 5 ativos | 10 ativos | Ilimitado | Ilimitado | Ilimitado |
 | Calendários | Ilimitados | Ilimitados | Ilimitados | Ilimitados |
 | Storage de mídia **ativo** (fair use, HQ + preview) | ~5 GB | ~20 GB | ~80 GB | Negociado |
 | Consulta histórica (preview comprimido) | 12 meses | Ilimitada | Ilimitada | Contrato |
@@ -464,6 +467,13 @@ Legenda: ✅ incluído · 🔜 roadmap · — não incluído
 \*Versionamento de artes existe (`AttachmentVersion`); log de auditoria completo ainda está no roadmap.
 
 ### Detalhe por plano
+
+#### ⚪ Solo — R$ 97/mês
+
+- Até **2 clientes**, **1 usuário**, **5 revisores** ativos
+- Calendários ilimitados, comentários, aprovação, link compartilhável — o produto inteiro, só com a carteira menor
+- Feito para o freelancer ou estúdio de uma pessoa atendendo os primeiros clientes; o caminho natural de upgrade é o Starter quando entra o terceiro cliente
+- Mesmo trial de 15 dias com cartão obrigatório dos demais planos
 
 #### 🟢 Starter — R$ 197/mês
 
