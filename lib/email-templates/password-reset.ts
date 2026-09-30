@@ -13,7 +13,7 @@ export function buildPasswordResetEmail(params: PasswordResetEmailParams): {
   const resetUrl = absoluteUrl(params.resetPath);
   const greeting = params.name ? `Olá, ${escapeHtml(params.name)}` : "Olá";
 
-  const subject = "Approove — redefinição de senha";
+  const subject = "Approove - redefinição de senha";
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -32,7 +32,7 @@ export function buildPasswordResetEmail(params: PasswordResetEmailParams): {
       Ou copie este link: <a href="${resetUrl}" style="color:#52525b;">${resetUrl}</a>
     </p>
     <p style="margin:16px 0 0;font-size:12px;color:#a1a1aa;line-height:1.5;">
-      Se você não pediu essa redefinição, ignore este e-mail — sua senha continua a mesma.
+      Se você não pediu essa redefinição, ignore este e-mail - sua senha continua a mesma.
     </p>
   </div>
 </body>
@@ -45,7 +45,7 @@ export function buildPasswordResetEmail(params: PasswordResetEmailParams): {
     "",
     resetUrl,
     "",
-    "Se você não pediu essa redefinição, ignore este e-mail — sua senha continua a mesma.",
+    "Se você não pediu essa redefinição, ignore este e-mail - sua senha continua a mesma.",
   ].join("\n");
 
   return { subject, html, text };

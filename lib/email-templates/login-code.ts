@@ -8,7 +8,7 @@ export function buildLoginCodeEmail(params: LoginCodeEmailParams): {
   html: string;
   text: string;
 } {
-  const subject = `${params.code} — seu código de acesso ao Approove`;
+  const subject = `${params.code} - seu código de acesso ao Approove`;
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">

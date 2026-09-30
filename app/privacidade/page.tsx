@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalPageLayout, LegalSection } from "@/components/legal-page-layout";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidade — Approove",
+  title: "Política de Privacidade - Approove",
   description: "Política de Privacidade da plataforma Approove.",
 };
 
@@ -95,22 +95,22 @@ export default function PrivacidadePage() {
         </p>
         <ul>
           <li>
-            <strong>Stripe</strong> — processamento de pagamentos e gestão de
+            <strong>Stripe</strong> - processamento de pagamentos e gestão de
             assinaturas;
           </li>
           <li>
-            <strong>Resend</strong> — envio de e-mails transacionais;
+            <strong>Resend</strong> - envio de e-mails transacionais;
           </li>
           <li>
-            <strong>Vercel Blob</strong> — armazenamento de imagens e vídeos
+            <strong>Vercel Blob</strong> - armazenamento de imagens e vídeos
             enviados à Plataforma;
           </li>
           <li>
-            <strong>Turso / Neon</strong> — hospedagem do banco de dados da
+            <strong>Turso / Neon</strong> - hospedagem do banco de dados da
             aplicação;
           </li>
           <li>
-            <strong>Vercel</strong> — hospedagem da aplicação.
+            <strong>Vercel</strong> - hospedagem da aplicação.
           </li>
         </ul>
         <p>

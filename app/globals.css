@@ -171,6 +171,54 @@ html:has(.lp) {
   }
 }
 
+/* Hero accent: cycles inside the same mask after the load rise */
+.hero-rotator {
+  display: inline-grid;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+
+.hero-rotator > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.hero-rotator > span[data-state="idle"] {
+  transform: translateY(0);
+}
+
+.hero-rotator > span[data-state="wait"] {
+  transform: translateY(140%);
+}
+
+.hero-rotator > span[data-state="in"] {
+  animation: hero-word-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-rotator > span[data-state="out"] {
+  animation: hero-word-out 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes hero-word-in {
+  from {
+    transform: translateY(140%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-word-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-140%);
+  }
+}
+
 /* Load-time fade-up for hero support copy (delay via --d) */
 .fade-up {
   opacity: 0;
@@ -231,6 +279,7 @@ html:has(.lp) {
 @media (prefers-reduced-motion: reduce) {
   .landing-marquee,
   .hero-word,
+  .hero-rotator > span,
   .fade-up,
   .preloader,
   .preloader-mark,
@@ -241,6 +290,14 @@ html:has(.lp) {
   .mw > span {
     transform: none;
     transition: none;
+  }
+  .hero-rotator > span[data-state="wait"],
+  .hero-rotator > span[data-state="out"] {
+    display: none;
+  }
+  .hero-rotator > span[data-state="idle"],
+  .hero-rotator > span[data-state="in"] {
+    transform: none;
   }
   .fade-up {
     opacity: 1;

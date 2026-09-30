@@ -5,13 +5,14 @@ import { MaskedWords } from "@/components/landing/masked-words";
 import { ScrollFill } from "@/components/landing/scroll-fill";
 import { Parallax } from "@/components/landing/parallax";
 import { Preloader } from "@/components/landing/preloader";
+import { RotatingWord } from "@/components/landing/rotating-word";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { localizedText, type AppLocale } from "@/lib/locale";
 import { planPrice, type PaidPlan } from "@/lib/pricing";
 
 /*
  * Paleta editorial da landing (referências: units.gr + poetic.com).
- * Cores fixas de marketing — intencionalmente independentes do tema do app.
+ * Cores fixas de marketing - intencionalmente independentes do tema do app.
  * Interações (hover) usam classes Tailwind literais com os mesmos hex.
  */
 const ink = "#1B1917";
@@ -100,7 +101,7 @@ function Navbar({ locale }: { locale: AppLocale }) {
       style={{ backgroundColor: "rgba(244,233,225,0.85)", borderColor: "rgba(27,25,23,0.1)" }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
-        <Link href="/" aria-label={tr("Approove — página inicial", "Approove — home")} className="text-xl">
+        <Link href="/" aria-label={tr("Approove - página inicial", "Approove - home")} className="text-xl">
           <Wordmark />
         </Link>
         <nav className="hidden items-center gap-8 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.2em] md:flex">
@@ -140,8 +141,11 @@ function Navbar({ locale }: { locale: AppLocale }) {
 
 function HeroHeadline({ locale }: { locale: AppLocale }) {
   const lines = locale === "pt-BR"
-    ? [["Chega", "de", "aprovar"], ["posts", "pelo"], ["WhatsApp."]]
-    : [["Stop", "approving"], ["posts", "on"], ["WhatsApp."]];
+    ? [["Chega", "de", "aprovar"], ["posts", "pelo"]]
+    : [["Stop", "approving"], ["posts", "on"]];
+  const accent = locale === "pt-BR"
+    ? ["WhatsApp.", "E-mail.", "Drive."]
+    : ["WhatsApp.", "email.", "Drive."];
   let wordIndex = 0;
 
   return (
@@ -152,13 +156,7 @@ function HeroHeadline({ locale }: { locale: AppLocale }) {
             const delay = 750 + wordIndex++ * 70;
             return (
               <span key={word} className="hero-mask mr-[0.22em] last:mr-0">
-                <span
-                  className="hero-word"
-                  style={{
-                    animationDelay: `${delay}ms`,
-                    ...(word === "WhatsApp." ? { color: blue } : {}),
-                  }}
-                >
+                <span className="hero-word" style={{ animationDelay: `${delay}ms` }}>
                   {word}
                 </span>
               </span>
@@ -166,6 +164,16 @@ function HeroHeadline({ locale }: { locale: AppLocale }) {
           })}
         </span>
       ))}
+      <span className="block">
+        <span className="hero-mask">
+          <span
+            className="hero-word"
+            style={{ animationDelay: `${750 + wordIndex * 70}ms`, color: blue }}
+          >
+            <RotatingWord words={accent} />
+          </span>
+        </span>
+      </span>
     </h1>
   );
 }
@@ -187,8 +195,8 @@ function Hero({ locale }: { locale: AppLocale }) {
           style={{ "--d": "1350ms", color: "rgba(27,25,23,0.65)" } as React.CSSProperties}
         >
           {tr(
-            "O calendário editorial da sua agência em um só lugar. O cliente revisa, comenta direto na arte e aprova por um simples link — sem criar conta, sem prints, sem retrabalho.",
-            "Your agency’s editorial calendar in one place. Clients review, comment directly on the creative, and approve through a simple link — no account, screenshots, or rework."
+            "O calendário editorial da sua agência em um só lugar. O cliente revisa, comenta direto na arte e aprova por um simples link - sem criar conta, sem prints, sem retrabalho.",
+            "Your agency’s editorial calendar in one place. Clients review, comment directly on the creative, and approve through a simple link - no account, screenshots, or rework."
           )}
         </p>
         <div
@@ -418,7 +426,7 @@ function getSteps(locale: AppLocale): {
     number: "/1",
     title: tr("Monte o calendário.", "Build the calendar."),
     description: tr(
-      "Crie o cliente, planeje as publicações do mês e envie as artes — feed, stories, reels, carrossel ou LinkedIn. Cada material aceita múltiplas versões.",
+      "Crie o cliente, planeje as publicações do mês e envie as artes - feed, stories, reels, carrossel ou LinkedIn. Cada material aceita múltiplas versões.",
       "Create the client, plan the month’s posts, and upload creatives for feeds, stories, reels, carousels, or LinkedIn. Every asset supports multiple versions."
     ),
     card: (
@@ -447,7 +455,7 @@ function getSteps(locale: AppLocale): {
     number: "/2",
     title: tr("Envie um link.", "Send one link."),
     description: tr(
-      "O cliente acessa direto do navegador, sem cadastro e sem senha. Convide revisores nomeados com papéis — visualizar, revisar ou aprovar.",
+      "O cliente acessa direto do navegador, sem cadastro e sem senha. Convide revisores nomeados com papéis - visualizar, revisar ou aprovar.",
       "Clients open it directly in the browser, with no signup or password. Invite named reviewers with viewer, reviewer, or approver roles."
     ),
     card: (
@@ -484,7 +492,7 @@ function getSteps(locale: AppLocale): {
     number: "/3",
     title: tr("Receba o aprovado.", "Get the approval."),
     description: tr(
-      "O cliente comenta direto na arte e aprova post a post. Cada decisão fica registrada com autor e data — respaldo completo para a agência.",
+      "O cliente comenta direto na arte e aprova post a post. Cada decisão fica registrada com autor e data - respaldo completo para a agência.",
       "The client comments directly on the creative and approves each post. Every decision is recorded with author and date for a complete audit trail."
     ),
     card: (
@@ -744,7 +752,7 @@ function PricingSection({ locale }: { locale: AppLocale }) {
           })}
         </div>
         <p className="mt-10 text-sm font-medium" style={{ color: "rgba(27,25,23,0.55)" }}>
-          {tr("Precisa de mais? O plano Enterprise tem clientes, usuários e revisores ilimitados — ", "Need more? Enterprise includes unlimited clients, users, and reviewers — ")}
+          {tr("Precisa de mais? O plano Enterprise tem clientes, usuários e revisores ilimitados - ", "Need more? Enterprise includes unlimited clients, users, and reviewers - ")}
           <a href="mailto:contato@approove.app" className="font-bold underline underline-offset-4" style={{ color: ink }}>
             {tr("fale com a gente", "talk to us")}
           </a>
@@ -764,7 +772,7 @@ function FaqSection({ locale }: { locale: AppLocale }) {
     },
     {
       question: tr("Posso testar antes de assinar?", "Can I try it before subscribing?"),
-      answer: tr("Sim. Todos os planos começam com 15 dias grátis — você adiciona um cartão, mas nada é cobrado durante o período de teste e pode cancelar a qualquer momento antes da primeira cobrança.", "Yes. Every plan starts with a 15-day free trial — you add a card, but nothing is charged during the trial and you can cancel anytime before the first charge."),
+      answer: tr("Sim. Todos os planos começam com 15 dias grátis - você adiciona um cartão, mas nada é cobrado durante o período de teste e pode cancelar a qualquer momento antes da primeira cobrança.", "Yes. Every plan starts with a 15-day free trial - you add a card, but nothing is charged during the trial and you can cancel anytime before the first charge."),
     },
     {
       question: tr("Quais formatos de conteúdo o Approove suporta?", "Which content formats does Approove support?"),

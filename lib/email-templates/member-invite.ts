@@ -24,7 +24,7 @@ export function buildMemberInviteEmail(params: MemberInviteEmailParams): {
     ? `${escapeHtml(params.invitedByName)} convidou você para fazer parte da equipe <strong>${escapeHtml(params.organizationName)}</strong> no Approove.`
     : `Você foi convidado para fazer parte da equipe <strong>${escapeHtml(params.organizationName)}</strong> no Approove.`;
 
-  const subject = `${params.organizationName} — convite para a equipe`;
+  const subject = `${params.organizationName} - convite para a equipe`;
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">

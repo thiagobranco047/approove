@@ -240,7 +240,7 @@ export function PostSlideEditable({
                   })}
                   {dayPostCount && dayPostCount > 1 && (
                     <span className="text-muted-foreground font-normal">
-                      {" "}— {dayPostIndex} de {dayPostCount}
+                      {" "}- {dayPostIndex} de {dayPostCount}
                     </span>
                   )}
                 </p>
@@ -373,7 +373,7 @@ export function PostSlideEditable({
                   <div>
                     <h3 className="font-semibold text-sm">Nova versão</h3>
                     <p className="text-xs text-muted-foreground">
-                      {getAttachmentLabel(currentAttachment)} — versão {currentAttachment.versions.length + 1}
+                      {getAttachmentLabel(currentAttachment)} - versão {currentAttachment.versions.length + 1}
                     </p>
                   </div>
                   <Button
@@ -573,7 +573,7 @@ export function PostSlideEditable({
                       <Tooltip>
                         <TooltipTrigger asChild>{thumbButton}</TooltipTrigger>
                         <TooltipContent side="top" className="text-xs">
-                          {att.versions.length} versões disponíveis — selecione no preview para alternar
+                          {att.versions.length} versões disponíveis - selecione no preview para alternar
                         </TooltipContent>
                       </Tooltip>
                     ) : (

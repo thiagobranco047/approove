@@ -163,11 +163,11 @@ async function main() {
       scheduledAt: new Date("2026-06-14T09:00:00"),
       channel: "Instagram",
       copyText:
-        "📝 Rascunho de planejamento — post só com copy por enquanto.\n\nTema: bastidores da equipe criativa.\nCTA: salve para se inspirar depois.\n\n#Planejamento #Copy",
+        "📝 Rascunho de planejamento - post só com copy por enquanto.\n\nTema: bastidores da equipe criativa.\nCTA: salve para se inspirar depois.\n\n#Planejamento #Copy",
       status: "pending",
       productionStage: "waiting_design",
       assigneeEmail: "design@approove.com",
-      handoffNote: "Copy validada no planejamento — montar feed + stories",
+      handoffNote: "Copy validada no planejamento - montar feed + stories",
       attachments: [],
     },
     {
@@ -345,7 +345,7 @@ async function main() {
 
   console.log("\n🎉 Seed completed!");
   console.log("\n📝 Admin: admin@approove.com / admin123");
-  console.log("📝 Time (Agência Demo): copy@ / design@ / review@approove.com — senha member123");
+  console.log("📝 Time (Agência Demo): copy@ / design@ / review@approove.com - senha member123");
   console.log(
     "📝 Client URL: http://localhost:3000/c/demo-client/v1?t=demo-token-123"
   );

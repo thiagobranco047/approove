@@ -207,7 +207,7 @@ export function ClientReviewersTab({
         <div>
           <h3 className="font-semibold">Revisores convidados</h3>
           <p className="text-sm text-muted-foreground">
-            Pessoas autorizadas a revisar calendários de {clientName} — cada uma com link próprio e empresas vinculadas.
+            Pessoas autorizadas a revisar calendários de {clientName} - cada uma com link próprio e empresas vinculadas.
           </p>
         </div>
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>
@@ -246,9 +246,9 @@ export function ClientReviewersTab({
                 onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
                 className="text-sm px-3 py-2 border rounded-lg bg-background w-full sm:w-auto"
               >
-                <option value="viewer">Visualizador — só visualiza</option>
-                <option value="reviewer">Revisor — comenta e anota</option>
-                <option value="approver">Aprovador — comenta, anota e aprova</option>
+                <option value="viewer">Visualizador - só visualiza</option>
+                <option value="reviewer">Revisor - comenta e anota</option>
+                <option value="approver">Aprovador - comenta, anota e aprova</option>
               </select>
             </div>
 
@@ -295,7 +295,7 @@ export function ClientReviewersTab({
                 <p className="font-medium">Convite enviado para {inviteFeedback.email}</p>
               ) : inviteFeedback.emailSkipped ? (
                 <>
-                  <p className="font-medium">Convite criado — e-mail não configurado</p>
+                  <p className="font-medium">Convite criado - e-mail não configurado</p>
                   <p className="text-muted-foreground">
                     Defina <code className="text-xs bg-muted px-1 py-0.5 rounded">RESEND_API_KEY</code> e{" "}
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">EMAIL_FROM</code> no servidor.
@@ -306,7 +306,7 @@ export function ClientReviewersTab({
                 <>
                   <p className="font-medium">Convite criado, mas o e-mail falhou</p>
                   <p className="text-muted-foreground">
-                    {inviteFeedback.emailError ?? "Erro desconhecido"} — copie o link manualmente na lista abaixo.
+                    {inviteFeedback.emailError ?? "Erro desconhecido"} - copie o link manualmente na lista abaixo.
                   </p>
                 </>
               )}

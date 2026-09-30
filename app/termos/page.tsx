@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalPageLayout, LegalSection } from "@/components/legal-page-layout";
 
 export const metadata: Metadata = {
-  title: "Termos de Uso — Approove",
+  title: "Termos de Uso - Approove",
   description: "Termos de Uso da plataforma Approove.",
 };
 
@@ -43,7 +43,7 @@ export default function TermosPage() {
           </li>
           <li>
             Links de compartilhamento e convites de revisores dão acesso a
-            conteúdo do seu cliente sem exigir criação de conta — cabe a você
+            conteúdo do seu cliente sem exigir criação de conta - cabe a você
             controlar a quem esses links são enviados.
           </li>
           <li>
@@ -83,7 +83,7 @@ export default function TermosPage() {
           materiais que enviar à Plataforma (&quot;Conteúdo&quot;). Ao enviar
           Conteúdo, você nos concede uma licença limitada, não exclusiva,
           para armazenar, processar e exibir esse Conteúdo exclusivamente
-          para operar o serviço — por exemplo, exibi-lo aos revisores do
+          para operar o serviço - por exemplo, exibi-lo aos revisores do
           cliente através de um link de aprovação.
         </p>
         <p>

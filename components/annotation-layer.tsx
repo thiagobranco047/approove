@@ -220,7 +220,7 @@ function ActivePinDetail({
         }`}>
           <MessageCircle className="h-3 w-3" />
           {pin.author === "client" ? (pin.authorName ?? "Cliente") : "Agência"}
-          {isResolved && " — Resolvido"}
+          {isResolved && " - Resolvido"}
         </div>
 
         <div className="p-3">

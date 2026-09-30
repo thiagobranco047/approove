@@ -320,7 +320,7 @@ export default function CalendarPage() {
         const data = await response.json().catch(() => ({}));
         if (response.status === 404) {
           await fetchPosts();
-          alert("Os dados do post estavam desatualizados. Recarregamos — tente anotar novamente.");
+          alert("Os dados do post estavam desatualizados. Recarregamos - tente anotar novamente.");
           return;
         }
         throw new Error(

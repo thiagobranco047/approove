@@ -45,8 +45,8 @@ export default async function SettingsPage() {
               {isTrialing(organization) && organization.currentPeriodEnd ? (
                 <p className="text-sm text-muted-foreground">
                   {tr(
-                    `Período gratuito — ${trialDaysLeft(organization)} dias restantes (primeira cobrança em ${organization.currentPeriodEnd.toLocaleDateString("pt-BR")})`,
-                    `Free trial — ${trialDaysLeft(organization)} days left (first charge on ${organization.currentPeriodEnd.toLocaleDateString("en-US")})`
+                    `Período gratuito - ${trialDaysLeft(organization)} dias restantes (primeira cobrança em ${organization.currentPeriodEnd.toLocaleDateString("pt-BR")})`,
+                    `Free trial - ${trialDaysLeft(organization)} days left (first charge on ${organization.currentPeriodEnd.toLocaleDateString("en-US")})`
                   )}
                 </p>
               ) : (

@@ -166,7 +166,7 @@ export function PostSlide({
               })}
               {dayPostCount && dayPostCount > 1 && (
                 <span className="text-muted-foreground font-normal">
-                  {" "}— {dayPostIndex} de {dayPostCount}
+                  {" "}- {dayPostIndex} de {dayPostCount}
                 </span>
               )}
             </p>
@@ -287,7 +287,7 @@ export function PostSlide({
                         <Tooltip>
                           <TooltipTrigger asChild>{thumbButton}</TooltipTrigger>
                           <TooltipContent side="top" className="text-xs">
-                            {att.versions.length} versões disponíveis — selecione no preview para alternar
+                            {att.versions.length} versões disponíveis - selecione no preview para alternar
                           </TooltipContent>
                         </Tooltip>
                       ) : (

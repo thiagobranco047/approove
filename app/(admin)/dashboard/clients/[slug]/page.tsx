@@ -446,7 +446,7 @@ export default function ClientDetailPage() {
             <p className="text-sm text-muted-foreground">
               A gestão interna (publicações, revisores, informações) fica em{" "}
               <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/dashboard/clients/demo-client</code>
-              {" "}— não confunda com a visão do calendário em{" "}
+              {" "}- não confunda com a visão do calendário em{" "}
               <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/c/demo-client/v1</code>.
             </p>
             <Button onClick={() => router.push("/dashboard/clients")}>
@@ -525,7 +525,7 @@ export default function ClientDetailPage() {
             <p className="font-medium">Calendário de produção</p>
             <p className="text-sm text-muted-foreground max-w-2xl">
               Nesta página você gerencia publicações (data, canal e copy), revisores e informações do cliente.
-              Para <strong>enviar artes</strong>, criar pins, comentar e aprovar, abra o calendário de produção — é lá que o time monta o conteúdo visual.
+              Para <strong>enviar artes</strong>, criar pins, comentar e aprovar, abra o calendário de produção - é lá que o time monta o conteúdo visual.
             </p>
           </div>
           <Button asChild className="shrink-0">
@@ -586,7 +586,7 @@ export default function ClientDetailPage() {
         <TabsContent value="posts" className="mt-4 space-y-6">
           {posts.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              Planeje o calendário com data e copy — as artes podem ser adicionadas depois no calendário de produção ou ao editar a publicação.
+              Planeje o calendário com data e copy - as artes podem ser adicionadas depois no calendário de produção ou ao editar a publicação.
             </p>
           )}
           {posts.length === 0 ? (
@@ -595,7 +595,7 @@ export default function ClientDetailPage() {
                 <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">Nenhuma publicação</p>
                 <p className="text-sm text-muted-foreground mt-1 text-center max-w-md">
-                  Comece registrando data e texto — ideal para planejar o mês. As imagens entram depois.
+                  Comece registrando data e texto - ideal para planejar o mês. As imagens entram depois.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center mt-4">
                   <Button onClick={openCreatePost}>
@@ -841,7 +841,7 @@ export default function ClientDetailPage() {
                 className="w-full px-3 py-2 rounded-md border bg-background text-sm resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                Salve só o texto para ir montando o planejamento editorial — sem obrigatoriedade de anexar imagens agora.
+                Salve só o texto para ir montando o planejamento editorial - sem obrigatoriedade de anexar imagens agora.
               </p>
             </div>
 
@@ -907,7 +907,7 @@ export default function ClientDetailPage() {
                 <div>
                   <p className="text-sm font-medium">Materiais visuais (opcional)</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Upload, URL, carrossel ou vídeo — pode ficar para depois do planejamento.
+                    Upload, URL, carrossel ou vídeo - pode ficar para depois do planejamento.
                   </p>
                 </div>
                 {showMaterialsSection ? (

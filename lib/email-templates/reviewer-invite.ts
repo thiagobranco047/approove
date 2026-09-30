@@ -2,9 +2,9 @@ import type { ClientInviteRole } from "@/lib/share-access";
 import { absoluteUrl } from "@/lib/app-url";
 
 const ROLE_LABELS: Record<ClientInviteRole, string> = {
-  viewer: "Visualizador — só visualiza o calendário",
-  reviewer: "Revisor — comenta e anota nas artes",
-  approver: "Aprovador — comenta, anota e aprova publicações",
+  viewer: "Visualizador - só visualiza o calendário",
+  reviewer: "Revisor - comenta e anota nas artes",
+  approver: "Aprovador - comenta, anota e aprova publicações",
 };
 
 export interface ReviewerInviteEmailParams {
@@ -36,7 +36,7 @@ export function buildReviewerInviteEmail(params: ReviewerInviteEmailParams): {
         <strong>${escapeHtml(params.organizationName)}</strong> convidou você para revisar conteúdo no Approove.
       </p>`;
 
-  const subject = `${params.organizationName} — convite para revisar ${clientsLine}`;
+  const subject = `${params.organizationName} - convite para revisar ${clientsLine}`;
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -67,7 +67,7 @@ export function buildReviewerInviteEmail(params: ReviewerInviteEmailParams): {
       Ou copie este link: <a href="${shareUrl}" style="color:#52525b;">${shareUrl}</a>
     </p>
     <p style="margin:16px 0 0;font-size:12px;color:#a1a1aa;line-height:1.5;">
-      Não é necessário criar conta — o link é pessoal. Se você não esperava este convite, ignore este e-mail.
+      Não é necessário criar conta - o link é pessoal. Se você não esperava este convite, ignore este e-mail.
     </p>
   </div>
 </body>
@@ -86,7 +86,7 @@ export function buildReviewerInviteEmail(params: ReviewerInviteEmailParams): {
     "",
     `Abrir calendário: ${shareUrl}`,
     "",
-    "Não é necessário criar conta — o link é pessoal.",
+    "Não é necessário criar conta - o link é pessoal.",
   ].join("\n");
 
   return { subject, html, text };
