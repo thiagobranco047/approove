@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { readConsent, sendPageview } from "@/lib/analytics-consent";
+import { sendPageview } from "@/lib/analytics";
 
-/** Rastreia navegações SPA após consentimento concedido. */
+/** Rastreia navegações SPA; a primeira página é enviada pelo gtag config. */
 export function AnalyticsRouteTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -15,8 +15,6 @@ export function AnalyticsRouteTracker() {
       isFirstRender.current = false;
       return;
     }
-
-    if (readConsent() !== "granted") return;
 
     const query = searchParams.toString();
     sendPageview(query ? `${pathname}?${query}` : pathname);

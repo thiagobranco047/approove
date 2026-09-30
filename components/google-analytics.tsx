@@ -1,34 +1,24 @@
-import { cookies } from "next/headers";
+import Script from "next/script";
 import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from "@/lib/analytics";
-import { CONSENT_COOKIE_NAME } from "@/lib/analytics-consent";
 
-/**
- * Só injeta o snippet oficial do GA4 quando o visitante já concedeu consentimento
- * (cookie legível no servidor). Sem Consent Mode negando analytics_storage —
- * isso impedia hits de aparecer no Tempo real e na verificação do Google.
- */
-export async function GoogleAnalytics() {
+/** Mesmo padrão do projeto dutex: GA4 carrega em todas as páginas em produção. */
+export function GoogleAnalytics() {
   if (!isAnalyticsEnabled) return null;
-
-  const consent = (await cookies()).get(CONSENT_COOKIE_NAME)?.value;
-  if (consent !== "granted") return null;
 
   return (
     <>
-      <script
-        async
+      <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
       />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GA_MEASUREMENT_ID}');
-          `.trim(),
-        }}
-      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_MEASUREMENT_ID}');
+        `}
+      </Script>
     </>
   );
 }
