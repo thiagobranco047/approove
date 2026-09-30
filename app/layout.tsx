@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { getRequestLocale } from "@/lib/request-locale";
+import { AnalyticsBootstrap } from "@/components/analytics-bootstrap";
 import { AnalyticsRouteTracker } from "@/components/analytics-route-tracker";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { CookieConsent } from "@/components/cookie-consent";
@@ -36,6 +37,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        {/* GA4 o mais alto possível no <head>, conforme documentação do Google */}
         <GoogleAnalytics />
       </head>
       <body className={inter.className}>
@@ -48,6 +50,7 @@ export default async function RootLayout({
               disableTransitionOnChange
             >
               {children}
+              <AnalyticsBootstrap />
               <CookieConsent />
               <Suspense fallback={null}>
                 <AnalyticsRouteTracker />

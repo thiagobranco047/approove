@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/locale-provider";
 import { localizedText } from "@/lib/locale";
-import { isAnalyticsEnabled, readConsent, saveConsent } from "@/lib/analytics";
+import { isAnalyticsEnabled } from "@/lib/analytics";
+import { readConsent, saveConsent } from "@/lib/analytics-consent";
 
 export function CookieConsent() {
   const locale = useLocale();
