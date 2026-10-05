@@ -8,10 +8,11 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient(): PrismaClient {
   const url =
-    process.env.TURSO_DATABASE_URL ??
-    (process.env.DATABASE_URL?.startsWith("libsql://")
-      ? process.env.DATABASE_URL
-      : undefined);
+    process.env.TURSO_DATABASE_URL && process.env.TURSO_DATABASE_URL.length > 0
+      ? process.env.TURSO_DATABASE_URL
+      : process.env.DATABASE_URL?.startsWith("libsql://")
+        ? process.env.DATABASE_URL
+        : undefined;
 
   if (url) {
     const libsql = createClient({

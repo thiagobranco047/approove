@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CommentThread } from "./comment-thread";
+import { ApprovalActivity } from "./approval-activity";
 import { VersionSelector } from "./version-selector";
 import { MediaSourceInput } from "./media-source-input";
 import { AttachmentSequenceViewer } from "./attachment-sequence-viewer";
@@ -30,6 +31,13 @@ import {
   getAttachmentAspectRatio,
 } from "./post-material-form";
 import { resolveVersionSlides } from "@/lib/attachment-slides";
+import {
+  getAttachmentVersionNumbers,
+  isViewingHistoricalAttachment,
+  isViewingLatestApprovalPackage,
+} from "@/lib/viewed-approval-package";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 import type { AttachmentVersion } from "@/lib/types";
 import {
   type Post,
@@ -75,6 +83,8 @@ interface PostSlideEditableProps {
   onDelegate?: (post: Post) => void;
   dayPostIndex?: number;
   dayPostCount?: number;
+  onViewedPackageChange?: (isLatest: boolean) => void;
+  onRegisterShowCurrentVersion?: (showCurrent: () => void) => void;
 }
 
 export function PostSlideEditable({
@@ -94,11 +104,20 @@ export function PostSlideEditable({
   onDelegate,
   dayPostIndex,
   dayPostCount,
+  onViewedPackageChange,
+  onRegisterShowCurrentVersion,
 }: PostSlideEditableProps) {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const [copying, setCopying] = useState(false);
   const [editing, setEditing] = useState(false);
   const [activeAttachmentIndex, setActiveAttachmentIndex] = useState(0);
   const [activeVersionIndex, setActiveVersionIndex] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    setActiveAttachmentIndex(0);
+    setActiveVersionIndex({});
+  }, [post.id]);
   const [showAddAttachment, setShowAddAttachment] = useState(false);
   const [materialDraft, setMaterialDraft] = useState(createEmptyMaterialDraft);
   const [showAddVersion, setShowAddVersion] = useState(false);
@@ -138,6 +157,26 @@ export function PostSlideEditable({
   const currentVersion = currentAttachment?.versions[currentVersionIdx];
   const currentSlides = currentVersion ? resolveVersionSlides(currentVersion) : [];
   const currentImageUrl = currentSlides[0]?.url;
+  const versionNumbers = getAttachmentVersionNumbers(
+    currentAttachment,
+    activeVersionIndex
+  );
+  const viewingHistoricalCreative = isViewingHistoricalAttachment(
+    currentAttachment,
+    activeVersionIndex
+  );
+  const viewingLatestPackage = isViewingLatestApprovalPackage(
+    attachments,
+    activeVersionIndex
+  );
+
+  useEffect(() => {
+    onViewedPackageChange?.(viewingLatestPackage);
+  }, [viewingLatestPackage, onViewedPackageChange]);
+
+  useEffect(() => {
+    onRegisterShowCurrentVersion?.(() => setActiveVersionIndex({}));
+  }, [onRegisterShowCurrentVersion]);
 
   const handleCopy = async () => {
     try {
@@ -209,7 +248,7 @@ export function PostSlideEditable({
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col pt-16" data-component="post-slide-editable" id={`post-${post.id}`}>
+    <div className="min-h-screen lg:h-screen w-screen flex flex-col pt-16" data-component="post-slide-editable" id={`post-${post.id}`}>
       {/* Info Bar */}
       <div className="relative flex flex-col gap-2 py-3 border-b bg-muted/30 px-6" data-section="info-bar">
         <div className="flex items-center justify-center">
@@ -340,14 +379,31 @@ export function PostSlideEditable({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-2 gap-6 px-6 py-6 pb-8 overflow-hidden" data-section="main-content">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 px-4 lg:px-6 py-4 lg:py-6 lg:pb-8 overflow-y-auto lg:overflow-hidden" data-section="main-content">
         {/* Left: Image Preview + Attachment Thumbnails */}
         <div className="flex flex-col gap-3 min-h-0 overflow-hidden" data-section="image-area" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {/* Main preview */}
           <div className="relative flex-1 min-h-0 overflow-hidden bg-muted/20 rounded-lg border">
             {/* Version selector */}
             {currentAttachment && currentAttachment.versions.length > 0 && (
-              <div className="absolute top-3 right-3 z-10">
+              <div className="absolute top-3 left-3 right-3 z-10 flex items-start justify-between gap-2">
+                {viewingHistoricalCreative && versionNumbers ? (
+                  <div className="rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm border max-w-[55%]">
+                    {tr(
+                      `Vendo a versão ${versionNumbers.viewing} · A vigente é a ${versionNumbers.current}`,
+                      `Viewing version ${versionNumbers.viewing} · Current version is ${versionNumbers.current}`
+                    )}
+                  </div>
+                ) : !viewingLatestPackage ? (
+                  <div className="rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm border max-w-[55%]">
+                    {tr(
+                      "Outro material está numa versão anterior",
+                      "Another asset is on a previous version"
+                    )}
+                  </div>
+                ) : (
+                  <span />
+                )}
                 <VersionSelector
                   versions={currentAttachment.versions}
                   currentIndex={currentVersionIdx}
@@ -666,12 +722,14 @@ export function PostSlideEditable({
             </Card>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-hidden" data-section="comments-section">
+          <div className="flex-1 min-h-[220px] overflow-hidden" data-section="comments-section">
             <CommentThread
               comments={post.comments}
               onAddComment={(text) => onCommentAdd(post.id, text)}
             />
           </div>
+
+          <ApprovalActivity events={post.activity ?? []} legacyApproval={post.legacyApproval} />
         </div>
       </div>
     </div>

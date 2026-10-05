@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { addDays, subDays, startOfDay, isSameDay } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +20,7 @@ export default function CalendarPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewDate, setViewDate] = useState<Date | null>(null);
@@ -36,6 +37,11 @@ export default function CalendarPage() {
     Array<{ user: { id: string; name: string | null; email: string } }>
   >([]);
   const [handoffPost, setHandoffPost] = useState<Post | null>(null);
+  const [viewingLatestPackage, setViewingLatestPackage] = useState(true);
+  const showCurrentVersionRef = useRef<() => void>(() => {});
+  const registerShowCurrentVersion = useCallback((showCurrent: () => void) => {
+    showCurrentVersionRef.current = showCurrent;
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     const url = token
@@ -46,21 +52,37 @@ export default function CalendarPage() {
 
     if (!response.ok) {
       const data = await response.json();
-      throw new Error(data.error || "Erro ao carregar posts");
+      const error = new Error(data.error || "Erro ao carregar posts") as Error & {
+        code?: string;
+      };
+      error.code = data.code;
+      throw error;
     }
 
     const data = await response.json();
     const loadedPosts: Post[] = data.posts ?? [];
 
-    if (data.isAdmin) {
-      setIsAdmin(true);
-    }
+    setIsAdmin(Boolean(data.isAdmin));
 
     if (data.access?.reviewer) {
       setReviewerName(data.access.reviewer.name);
     }
     if (data.access?.permissions) {
       setPermissions(data.access.permissions);
+    }
+
+    if (data.isAdmin) {
+      try {
+        const teamRes = await fetch("/api/team");
+        if (teamRes.ok) {
+          const teamData = await teamRes.json();
+          setTeamMembers(teamData.members ?? []);
+        }
+      } catch {
+        // team list is optional for delegation
+      }
+    } else {
+      setTeamMembers([]);
     }
 
     setClientName(
@@ -82,38 +104,18 @@ export default function CalendarPage() {
   useEffect(() => {
     async function init() {
       try {
-        const adminRes = await fetch("/api/check-admin");
-        const adminData = await adminRes.json();
-        setIsAdmin(adminData.isAdmin);
-
-        if (!token && !adminData.isAdmin) {
-          setError("Token não fornecido. Acesse com ?t=TOKEN");
-          setLoading(false);
-          return;
-        }
-
-        if (adminData.isAdmin) {
-          try {
-            const teamRes = await fetch("/api/team");
-            if (teamRes.ok) {
-              const teamData = await teamRes.json();
-              setTeamMembers(teamData.members ?? []);
-            }
-          } catch {
-            // team list is optional for delegation
-          }
-        }
-
         await fetchPosts();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro desconhecido");
+        const failed = err as Error & { code?: string };
+        setError(failed instanceof Error ? failed.message : "Erro desconhecido");
+        setErrorCode(failed.code ?? null);
       } finally {
         setLoading(false);
       }
     }
 
     init();
-  }, [token, fetchPosts]);
+  }, [fetchPosts]);
 
   const handleStatusChange = async (postId: string, status: PostStatus) => {
     try {
@@ -128,11 +130,12 @@ export default function CalendarPage() {
       }
 
       // Update local state
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId ? { ...post, status } : post
-        )
-      );
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId ? { ...post, status } : post
+          )
+        );
+        await fetchPosts();
     } catch (err) {
       console.error("Error updating status:", err);
     }
@@ -633,11 +636,18 @@ export default function CalendarPage() {
   }
 
   if (error) {
+    const unavailable = errorCode === "WORKSPACE_UNAVAILABLE";
     return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold text-destructive">Erro</h1>
-          <p className="text-muted-foreground">{error}</p>
+      <div className="h-screen w-screen flex items-center justify-center p-6">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {unavailable ? "Este espaço está temporariamente indisponível." : "Erro"}
+          </h1>
+          <p className="text-muted-foreground">
+            {unavailable
+              ? "Entre em contato com a equipe responsável pelo conteúdo."
+              : error}
+          </p>
         </div>
       </div>
     );
@@ -655,6 +665,9 @@ export default function CalendarPage() {
           openCalendarForDate(viewDate ?? currentMonth)
         }
         canApprove={isAdmin || permissions.canApprove}
+        allowPendingReset={isAdmin}
+        viewingLatestPackage={viewingLatestPackage}
+        onShowCurrentVersion={() => showCurrentVersionRef.current()}
         showStatus={Boolean(currentPost)}
         reviewerName={!isAdmin ? reviewerName : null}
       />
@@ -692,6 +705,7 @@ export default function CalendarPage() {
           {currentPost ? (
             isAdmin ? (
               <PostSlideEditable
+                key={currentPost.id}
                 post={currentPost}
                 clientName={clientName}
                 isAdmin={isAdmin}
@@ -706,11 +720,14 @@ export default function CalendarPage() {
                 onPinResolve={handlePinResolve}
                 onPinDelete={handlePinDelete}
                 onDelegate={setHandoffPost}
+                onViewedPackageChange={setViewingLatestPackage}
+                onRegisterShowCurrentVersion={registerShowCurrentVersion}
                 dayPostIndex={dayPostIndex + 1}
                 dayPostCount={postsOnViewDate.length}
               />
             ) : (
               <PostSlide
+                key={currentPost.id}
                 post={currentPost}
                 clientName={clientName}
                 onCommentAdd={handleCommentAdd}
@@ -719,6 +736,8 @@ export default function CalendarPage() {
                 onPinDelete={permissions.canPin ? handlePinDelete : undefined}
                 canComment={permissions.canComment}
                 canAnnotate={permissions.canPin}
+                onViewedPackageChange={setViewingLatestPackage}
+                onRegisterShowCurrentVersion={registerShowCurrentVersion}
                 dayPostIndex={dayPostIndex + 1}
                 dayPostCount={postsOnViewDate.length}
               />

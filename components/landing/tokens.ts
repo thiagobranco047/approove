@@ -1,0 +1,9 @@
+export const ink = "#1B1917";
+export const cream = "#F4E9E1";
+export const blue = "#0072E3";
+export const amber = "#FFB200";
+export const green = "#00AA3C";
+export const purple = "#AB54F7";
+export const coral = "#FF5C38";
+export const paper = "#FDFAF6";
+export const sand = "#EFE2D6";

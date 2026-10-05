@@ -42,11 +42,11 @@ export default async function SettingsPage() {
               <p className="text-xl font-semibold">
                 {planLabels[organization.plan] ?? organization.plan}
               </p>
-              {isTrialing(organization) && organization.currentPeriodEnd ? (
+              {isTrialing(organization) ? (
                 <p className="text-sm text-muted-foreground">
                   {tr(
-                    `Período gratuito - ${trialDaysLeft(organization)} dias restantes (primeira cobrança em ${organization.currentPeriodEnd.toLocaleDateString("pt-BR")})`,
-                    `Free trial - ${trialDaysLeft(organization)} days left (first charge on ${organization.currentPeriodEnd.toLocaleDateString("en-US")})`
+                    `Teste grátis · ${trialDaysLeft(organization)} dias restantes`,
+                    `Free trial · ${trialDaysLeft(organization)} days left`
                   )}
                 </p>
               ) : (

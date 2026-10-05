@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type { Provider } from "next-auth/providers";
+import { ensureOrganizationForUser } from "@/lib/ensure-organization";
 
 const providers: Provider[] = [
   Credentials({
@@ -51,14 +52,21 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  trustHost: true,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
   },
   providers,
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      if (user) {
+      if (user?.id) {
         token.id = user.id;
+        await ensureOrganizationForUser({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        });
       }
 
       if (trigger === "update" && session) {

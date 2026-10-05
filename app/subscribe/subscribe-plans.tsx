@@ -7,20 +7,22 @@ import { Button } from "@/components/ui/button";
 import { localizedText, type AppLocale } from "@/lib/locale";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { planPrice, type PaidPlan } from "@/lib/pricing";
-import { TRIAL_DAYS } from "@/lib/billing-access";
+import type { AccessKind } from "@/lib/billing-access";
+
+type SubscribeCopyKind = Extract<AccessKind, "trial_active" | "trial_expired" | "subscription_inactive">;
 
 type Props = {
   locale: AppLocale;
   organizationName: string;
   canManageBilling: boolean;
-  trialUsed: boolean;
+  copyKind: SubscribeCopyKind;
 };
 
 export function SubscribePlans({
   locale,
   organizationName,
   canManageBilling,
-  trialUsed,
+  copyKind,
 }: Props) {
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const [loading, setLoading] = useState<PaidPlan | null>(null);
@@ -38,8 +40,8 @@ export function SubscribePlans({
     const limits = PLAN_LIMITS[plan];
     return [
       limitLabel(limits.clients, tr("cliente", "client"), tr("clientes", "clients"), tr("Clientes ilimitados", "Unlimited clients")),
-      limitLabel(limits.members, tr("usuário", "user"), tr("usuários", "users"), tr("Usuários ilimitados", "Unlimited users")),
-      limitLabel(limits.reviewers, tr("revisor ativo", "active reviewer"), tr("revisores ativos", "active reviewers"), tr("Revisores ativos ilimitados", "Unlimited active reviewers")),
+      limitLabel(limits.members, tr("usuário da agência", "agency user"), tr("usuários da agência", "agency users"), tr("Usuários ilimitados", "Unlimited users")),
+      tr("Revisores ilimitados", "Unlimited reviewers"),
       tr("Publicações ilimitadas", "Unlimited posts"),
       tr("Aprovação por link", "Link-based approval"),
     ];
@@ -97,20 +99,27 @@ export function SubscribePlans({
           <>
             <div className="mx-auto max-w-2xl text-center">
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                {trialUsed
-                  ? tr("Escolha um plano para continuar", "Choose a plan to continue")
-                  : tr(`Comece com ${TRIAL_DAYS} dias grátis`, `Start with ${TRIAL_DAYS} days free`)}
+                {copyKind === "trial_active"
+                  ? tr("Escolha seu plano", "Choose your plan")
+                  : copyKind === "trial_expired"
+                    ? tr("Seu período de teste terminou", "Your trial has ended")
+                    : tr("Reative sua assinatura", "Reactivate your subscription")}
               </h1>
               <p className="mt-3 text-muted-foreground">
-                {trialUsed
+                {copyKind === "trial_active"
                   ? tr(
-                      "Sua organização não tem uma assinatura ativa. Assine um plano para voltar a usar o Approove.",
-                      "Your organization has no active subscription. Subscribe to keep using Approove."
+                      "Assine agora para continuar usando o Approove sem interrupções.",
+                      "Subscribe now to keep using Approove without interruption."
                     )
-                  : tr(
-                      `Escolha um plano e adicione um cartão válido. Nada é cobrado hoje: a primeira cobrança acontece no fim dos ${TRIAL_DAYS} dias e você pode cancelar quando quiser.`,
-                      `Pick a plan and add a valid card. Nothing is charged today: the first charge happens at the end of the ${TRIAL_DAYS} days, and you can cancel anytime.`
-                    )}
+                  : copyKind === "trial_expired"
+                    ? tr(
+                        "Escolha um plano para continuar com seus clientes, calendários e aprovações.",
+                        "Choose a plan to keep your clients, calendars, and approvals."
+                      )
+                    : tr(
+                        "Sua organização não tem uma assinatura ativa. Escolha um plano para recuperar o acesso. Nada é apagado.",
+                        "Your organization has no active subscription. Choose a plan to restore access. Nothing is deleted."
+                      )}
               </p>
             </div>
 
@@ -146,11 +155,6 @@ export function SubscribePlans({
                       <span className="text-3xl font-bold tracking-tight">{price}</span>
                       <span className="text-sm text-muted-foreground">{period}</span>
                     </div>
-                    {!trialUsed && (
-                      <p className="mt-1 text-xs font-medium text-primary">
-                        {tr(`Grátis pelos primeiros ${TRIAL_DAYS} dias`, `Free for the first ${TRIAL_DAYS} days`)}
-                      </p>
-                    )}
                     <ul className="mt-5 flex-1 space-y-2">
                       {featureList(plan.id).map((item) => (
                         <li key={item} className="flex items-start gap-2 text-sm">
@@ -168,23 +172,12 @@ export function SubscribePlans({
                       {loading === plan.id && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                      {trialUsed
-                        ? tr("Assinar", "Subscribe")
-                        : tr("Começar teste grátis", "Start free trial")}
+                      {tr("Assinar", "Subscribe")}
                     </Button>
                   </div>
                 );
               })}
             </div>
-
-            {!trialUsed && (
-              <p className="mt-8 text-center text-xs text-muted-foreground">
-                {tr(
-                  `Cancele a qualquer momento durante o período grátis e nada será cobrado. Enviaremos um lembrete antes da primeira cobrança.`,
-                  `Cancel anytime during the free period and you won't be charged. We'll send a reminder before the first charge.`
-                )}
-              </p>
-            )}
           </>
         ) : (
           <div className="mx-auto max-w-md rounded-lg border bg-background p-8 text-center">

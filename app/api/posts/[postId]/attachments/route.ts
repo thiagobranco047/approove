@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireOrganization } from "@/lib/auth";
+import { getPostForOrganization } from "@/lib/post-access";
 import {
   attachmentVersionInclude,
   buildSlideCreates,
   normalizeSlides,
   type SlideInput,
 } from "@/lib/attachment-slides";
+import { actorFromAuth, invalidateApprovalIfNeeded } from "@/lib/approval";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    await requireAuth();
-
+    const { user, organization } = await requireOrganization();
     const { postId } = await params;
     const body = await request.json();
     const { type, label, url, urls, slides } = body as {
@@ -24,6 +25,11 @@ export async function POST(
       urls?: string[];
       slides?: SlideInput[];
     };
+
+    const post = await getPostForOrganization(postId, organization.id);
+    if (!post) {
+      return NextResponse.json({ error: "Publicação não encontrada" }, { status: 404 });
+    }
 
     const slideItems = normalizeSlides(url, urls, slides);
     if (!type || slideItems.length === 0) {
@@ -66,8 +72,17 @@ export async function POST(
       },
     });
 
+    await invalidateApprovalIfNeeded({
+      postId,
+      reason: "attachment_added",
+      actor: actorFromAuth({ isAgency: true, access: null, user }),
+    });
+
     return NextResponse.json({ attachment });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
+    }
     console.error("Error creating attachment:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -81,8 +96,8 @@ export async function DELETE(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    await requireAuth();
-
+    const { user, organization } = await requireOrganization();
+    const { postId } = await params;
     const { attachmentId } = await request.json();
 
     if (!attachmentId) {
@@ -92,12 +107,33 @@ export async function DELETE(
       );
     }
 
+    const post = await getPostForOrganization(postId, organization.id);
+    if (!post) {
+      return NextResponse.json({ error: "Publicação não encontrada" }, { status: 404 });
+    }
+
+    const attachment = await prisma.postAttachment.findFirst({
+      where: { id: attachmentId, postItemId: postId },
+    });
+    if (!attachment) {
+      return NextResponse.json({ error: "Material não encontrado" }, { status: 404 });
+    }
+
+    await invalidateApprovalIfNeeded({
+      postId,
+      reason: "attachment_removed",
+      actor: actorFromAuth({ isAgency: true, access: null, user }),
+    });
+
     await prisma.postAttachment.delete({
       where: { id: attachmentId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
+    }
     console.error("Error deleting attachment:", error);
     return NextResponse.json(
       { error: "Internal server error" },

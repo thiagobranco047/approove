@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Copy, Clock, ImageIcon, Info } from "lucide-react";
@@ -13,9 +13,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CommentThread } from "./comment-thread";
+import { ApprovalActivity } from "./approval-activity";
 import { VersionSelector } from "./version-selector";
 import { AttachmentSequenceViewer } from "./attachment-sequence-viewer";
 import { resolveVersionSlides } from "@/lib/attachment-slides";
+import {
+  getAttachmentVersionNumbers,
+  isViewingHistoricalAttachment,
+  isViewingLatestApprovalPackage,
+} from "@/lib/viewed-approval-package";
+import { useLocale } from "@/components/locale-provider";
+import { localizedText } from "@/lib/locale";
 
 export type PostStatus = "pending" | "approved" | "adjustments";
 
@@ -86,6 +94,16 @@ export interface Post {
   assigneeId?: string | null;
   handoffNote?: string | null;
   assignee?: { id: string; name: string | null; email: string } | null;
+  activity?: Array<{
+    id: string;
+    type: string;
+    actorType: string;
+    actorNameSnapshot: string;
+    createdAt: string;
+    invalidationReason?: string | null;
+    creatives?: Array<{ versionNumber: number | null }>;
+  }>;
+  legacyApproval?: boolean;
 }
 
 interface PostSlideProps {
@@ -106,6 +124,8 @@ interface PostSlideProps {
   dayPostCount?: number;
   canComment?: boolean;
   canAnnotate?: boolean;
+  onViewedPackageChange?: (isLatest: boolean) => void;
+  onRegisterShowCurrentVersion?: (showCurrent: () => void) => void;
 }
 
 export function PostSlide({
@@ -119,12 +139,34 @@ export function PostSlide({
   dayPostCount,
   canComment = true,
   canAnnotate: canAnnotateProp,
+  onViewedPackageChange,
+  onRegisterShowCurrentVersion,
 }: PostSlideProps) {
+  const locale = useLocale();
+  const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const [copying, setCopying] = useState(false);
   const [activeAttachmentIndex, setActiveAttachmentIndex] = useState(0);
   const [activeVersionIndex, setActiveVersionIndex] = useState<Record<string, number>>({});
 
+  useEffect(() => {
+    setActiveAttachmentIndex(0);
+    setActiveVersionIndex({});
+  }, [post.id]);
+
   const attachments = post.attachments || [];
+  const viewingLatestPackage = isViewingLatestApprovalPackage(
+    attachments,
+    activeVersionIndex
+  );
+
+  useEffect(() => {
+    onViewedPackageChange?.(viewingLatestPackage);
+  }, [viewingLatestPackage, onViewedPackageChange]);
+
+  useEffect(() => {
+    onRegisterShowCurrentVersion?.(() => setActiveVersionIndex({}));
+  }, [onRegisterShowCurrentVersion]);
+
   const safeAttachmentIndex = attachments.length
     ? Math.min(activeAttachmentIndex, attachments.length - 1)
     : 0;
@@ -138,6 +180,14 @@ export function PostSlide({
   const currentVersion = currentAttachment?.versions[currentVersionIdx];
   const currentSlides = currentVersion ? resolveVersionSlides(currentVersion) : [];
   const currentImageUrl = currentSlides[0]?.url;
+  const versionNumbers = getAttachmentVersionNumbers(
+    currentAttachment,
+    activeVersionIndex
+  );
+  const viewingHistoricalCreative = isViewingHistoricalAttachment(
+    currentAttachment,
+    activeVersionIndex
+  );
 
   const handleCopy = async () => {
     try {
@@ -154,7 +204,7 @@ export function PostSlide({
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col pt-16" data-component="post-slide" id={`post-${post.id}`}>
+    <div className="min-h-screen lg:h-screen w-screen flex flex-col pt-16" data-component="post-slide" id={`post-${post.id}`}>
       {/* Info Bar */}
       <div className="relative flex items-center justify-center py-3 border-b bg-muted/30 px-6" data-section="info-bar">
         <div className="flex items-center gap-3">
@@ -193,14 +243,31 @@ export function PostSlide({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-2 gap-6 px-6 py-6 pb-8 overflow-hidden" data-section="main-content">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 px-4 lg:px-6 py-4 lg:py-6 lg:pb-8 overflow-y-auto lg:overflow-hidden" data-section="main-content">
         {/* Left: Image Preview + Attachment Thumbnails */}
-        <div className="flex flex-col gap-3 min-h-0 overflow-hidden" data-section="image-area" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+        <div className="flex flex-col gap-3 min-h-[50vh] lg:min-h-0 lg:overflow-hidden lg:max-h-[calc(100vh-180px)]" data-section="image-area">
           {/* Main preview */}
           <div className="relative flex-1 min-h-0 overflow-hidden bg-muted/20 rounded-lg border">
             {/* Version selector */}
             {currentAttachment && currentAttachment.versions.length > 1 && (
-              <div className="absolute top-3 right-3 z-10">
+              <div className="absolute top-3 left-3 right-3 z-10 flex items-start justify-between gap-2">
+                {viewingHistoricalCreative && versionNumbers ? (
+                  <div className="rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm border max-w-[70%]">
+                    {tr(
+                      `Vendo a versão ${versionNumbers.viewing} · A vigente é a ${versionNumbers.current}`,
+                      `Viewing version ${versionNumbers.viewing} · Current version is ${versionNumbers.current}`
+                    )}
+                  </div>
+                ) : !viewingLatestPackage ? (
+                  <div className="rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm border max-w-[70%]">
+                    {tr(
+                      "Outro material está numa versão anterior",
+                      "Another asset is on a previous version"
+                    )}
+                  </div>
+                ) : (
+                  <span />
+                )}
                 <VersionSelector
                   versions={currentAttachment.versions}
                   currentIndex={currentVersionIdx}
@@ -338,13 +405,15 @@ export function PostSlide({
             </Card>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-hidden" data-section="comments-section">
+          <div className="flex-1 min-h-[220px] overflow-hidden" data-section="comments-section">
             <CommentThread
               comments={post.comments}
               onAddComment={(text) => onCommentAdd(post.id, text)}
               canComment={canComment}
             />
           </div>
+
+          <ApprovalActivity events={post.activity ?? []} legacyApproval={post.legacyApproval} />
         </div>
       </div>
     </div>

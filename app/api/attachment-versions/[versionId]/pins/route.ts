@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeShareOrSession } from "@/lib/share-access";
+import { isPostVisibleToClient } from "@/lib/client-content-boundary";
 
-async function getPinCalendarVersionId(pinId: string) {
+async function getPinPostContext(pinId: string) {
   const pin = await prisma.annotationPin.findUnique({
     where: { id: pinId },
     include: {
       attachmentVersion: {
         include: {
           postAttachment: {
-            include: { postItem: { select: { calendarVersionId: true } } },
+            include: {
+              postItem: { select: { calendarVersionId: true, productionStage: true } },
+            },
           },
         },
       },
     },
   });
-  return pin?.attachmentVersion.postAttachment.postItem.calendarVersionId ?? null;
+  const postItem = pin?.attachmentVersion.postAttachment.postItem;
+  if (!postItem) return null;
+  return {
+    calendarVersionId: postItem.calendarVersionId,
+    productionStage: postItem.productionStage,
+  };
 }
 
 export async function POST(
@@ -48,7 +56,7 @@ export async function POST(
       where: { id: versionId },
       include: {
         postAttachment: {
-          include: { postItem: { select: { calendarVersionId: true } } },
+          include: { postItem: { select: { calendarVersionId: true, productionStage: true } } },
         },
       },
     });
@@ -57,10 +65,14 @@ export async function POST(
       return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
-    const calendarVersionId = version.postAttachment.postItem.calendarVersionId;
-    const authResult = await authorizeShareOrSession(token, calendarVersionId);
+    const postItem = version.postAttachment.postItem;
+    const authResult = await authorizeShareOrSession(token, postItem.calendarVersionId);
     if (!authResult.ok) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+      return NextResponse.json({ error: authResult.error, code: "code" in authResult ? authResult.code : undefined }, { status: authResult.status });
+    }
+
+    if (!authResult.isAgency && !isPostVisibleToClient(postItem.productionStage)) {
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
     if (!authResult.isAgency && !authResult.access?.permissions.canPin) {
@@ -104,14 +116,18 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const calendarVersionId = await getPinCalendarVersionId(pinId);
-    if (!calendarVersionId) {
+    const pinContext = await getPinPostContext(pinId);
+    if (!pinContext) {
       return NextResponse.json({ error: "Pin not found" }, { status: 404 });
     }
 
-    const authResult = await authorizeShareOrSession(token, calendarVersionId);
+    const authResult = await authorizeShareOrSession(token, pinContext.calendarVersionId);
     if (!authResult.ok) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+      return NextResponse.json({ error: authResult.error, code: "code" in authResult ? authResult.code : undefined }, { status: authResult.status });
+    }
+
+    if (!authResult.isAgency && !isPostVisibleToClient(pinContext.productionStage)) {
+      return NextResponse.json({ error: "Pin not found" }, { status: 404 });
     }
 
     if (!authResult.isAgency && !authResult.access?.permissions.canPin) {
@@ -142,14 +158,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "pinId is required" }, { status: 400 });
     }
 
-    const calendarVersionId = await getPinCalendarVersionId(pinId);
-    if (!calendarVersionId) {
+    const pinContext = await getPinPostContext(pinId);
+    if (!pinContext) {
       return NextResponse.json({ error: "Pin not found" }, { status: 404 });
     }
 
-    const authResult = await authorizeShareOrSession(token, calendarVersionId);
+    const authResult = await authorizeShareOrSession(token, pinContext.calendarVersionId);
     if (!authResult.ok) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+      return NextResponse.json({ error: authResult.error, code: "code" in authResult ? authResult.code : undefined }, { status: authResult.status });
+    }
+
+    if (!authResult.isAgency && !isPostVisibleToClient(pinContext.productionStage)) {
+      return NextResponse.json({ error: "Pin not found" }, { status: 404 });
     }
 
     if (!authResult.isAgency && !authResult.access?.permissions.canPin) {

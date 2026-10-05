@@ -2,28 +2,18 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TrialBanner } from "@/components/trial-banner";
 import { requireOrganization } from "@/lib/auth";
-import { hasBillingAccess } from "@/lib/billing-access";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Paywall: sem assinatura ativa (trial conta), nada do app é acessível.
-  let target: string | null = null;
-
   try {
-    const { organization } = await requireOrganization();
-    if (!hasBillingAccess(organization)) {
-      target = "/subscribe";
-    }
+    await requireOrganization();
   } catch {
-    target = "/login";
-  }
-
-  if (target) {
-    redirect(target);
+    redirect("/login");
   }
 
   return (
@@ -34,6 +24,7 @@ export default async function AdminLayout({
         <header className="flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6">
           <MobileSidebar />
           <div className="flex-1" />
+          <TrialBanner />
           <ThemeToggle />
         </header>
 

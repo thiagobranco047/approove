@@ -37,6 +37,7 @@ export async function proxy(req: NextRequest) {
   if (country) {
     requestHeaders.set("x-approove-country", country.toUpperCase());
   }
+  requestHeaders.set("x-approove-pathname", pathname);
 
   return NextResponse.next({ request: { headers: requestHeaders } });
 }

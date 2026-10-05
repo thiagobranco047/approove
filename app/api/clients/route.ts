@@ -4,6 +4,7 @@ import { requireOrganization } from "@/lib/auth";
 import { findAgencyShareToken } from "@/lib/share-access";
 import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
 import { planAllows, planLimitResponse } from "@/lib/plan-limits";
+import { getEffectivePlan } from "@/lib/billing-access";
 
 export async function GET() {
   try {
@@ -99,9 +100,9 @@ export async function POST(request: NextRequest) {
     const clientCount = await prisma.client.count({
       where: { organizationId: organization.id },
     });
-    if (!planAllows(organization.plan, "clients", clientCount)) {
+    if (!planAllows(getEffectivePlan(organization), "clients", clientCount)) {
       return NextResponse.json(
-        planLimitResponse(organization.plan, "clients", clientCount),
+        planLimitResponse(getEffectivePlan(organization), "clients", clientCount),
         { status: 403 }
       );
     }

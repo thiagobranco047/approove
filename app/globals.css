@@ -276,6 +276,51 @@ html:has(.lp) {
   transition: color 0.35s ease;
 }
 
+@keyframes lp-pin-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 6px 16px rgba(0, 114, 227, 0.35);
+  }
+}
+
+.lp-pin-pulse {
+  animation: lp-pin-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes lp-pipeline-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.is-visible .lp-pipeline-fill {
+  transform-origin: left;
+  animation: lp-pipeline-fill 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes lp-activity-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.is-visible .lp-activity-in {
+  animation: lp-activity-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-marquee,
   .hero-word,
@@ -309,5 +354,10 @@ html:has(.lp) {
   }
   .sf-word {
     transition: none;
+  }
+  .lp-pin-pulse,
+  .lp-pipeline-fill,
+  .lp-activity-in {
+    animation: none;
   }
 }

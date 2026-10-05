@@ -1,5 +1,6 @@
-import { prisma } from "../lib/prisma";
 import bcrypt from "bcryptjs";
+import { prisma } from "../lib/prisma";
+import { organizationTrialFields } from "../lib/billing-access";
 
 async function main() {
   console.log("🌱 Starting seed...");
@@ -21,12 +22,14 @@ async function main() {
   console.log("   Password: admin123");
 
   // Create organization
+  const trial = organizationTrialFields();
   const organization = await prisma.organization.upsert({
     where: { slug: "agencia-demo" },
-    update: {},
+    update: trial,
     create: {
       name: "Agência Demo",
       slug: "agencia-demo",
+      ...trial,
     },
   });
 

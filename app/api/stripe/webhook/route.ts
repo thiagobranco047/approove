@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { currentPeriodEnd, syncSubscription } from "@/lib/stripe-sync";
+import {
+  currentPeriodEnd,
+  subscriptionIdFromInvoice,
+  syncSubscription,
+} from "@/lib/stripe-sync";
 
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -54,6 +58,14 @@ export async function POST(request: NextRequest) {
     event.type === "customer.subscription.updated"
   ) {
     await syncSubscription(event.data.object as Stripe.Subscription);
+  }
+
+  if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
+    const invoice = event.data.object as Stripe.Invoice;
+    const subscriptionId = subscriptionIdFromInvoice(invoice);
+    if (subscriptionId) {
+      await syncSubscription(await stripe.subscriptions.retrieve(subscriptionId));
+    }
   }
 
   if (event.type === "customer.subscription.deleted") {

@@ -57,8 +57,9 @@ export default function NewClientPage() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || tr("Erro ao criar cliente", "Unable to create client"));
       }
 
@@ -93,7 +94,10 @@ export default function NewClientPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-                {error}
+                <p>{error}</p>
+                <a href="/dashboard/settings" className="mt-2 inline-block font-semibold underline">
+                  {tr("Ver planos", "View plans")}
+                </a>
               </div>
             )}
 

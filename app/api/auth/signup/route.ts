@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { organizationTrialFields } from "@/lib/billing-access";
+import { slugFromName } from "@/lib/org-slug";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -28,12 +30,7 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
-    const slug = data.organizationName
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    const slug = slugFromName(data.organizationName);
 
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -56,6 +53,7 @@ export async function POST(request: NextRequest) {
         data: {
           name: data.organizationName,
           slug: finalSlug,
+          ...organizationTrialFields(),
         },
       });
 

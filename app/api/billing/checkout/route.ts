@@ -5,7 +5,6 @@ import { requireOrganization } from "@/lib/auth";
 import { absoluteUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { TRIAL_DAYS } from "@/lib/billing-access";
 import { currencyForLocale } from "@/lib/pricing";
 import { getRequestLocale } from "@/lib/request-locale";
 
@@ -18,7 +17,6 @@ function isCurrencyMismatch(error: unknown) {
 
 const checkoutSchema = z.object({
   plan: z.enum(["starter", "pro", "studio"]),
-  // "paywall" = veio da tela pós-signup; muda os destinos de retorno.
   from: z.enum(["paywall", "settings"]).default("settings"),
 });
 
@@ -67,16 +65,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // O Price é multi-moeda (USD padrão + opção BRL). Sem `currency` explícito,
-    // o Checkout usa sempre a moeda padrão (USD) e o Adaptive Pricing não converte
-    // para BRL, porque a moeda local já existe em `currency_options`. Enviamos a
-    // moeda do locale para o Checkout cobrar o mesmo valor que foi anunciado.
     const currency = currencyForLocale(await getRequestLocale());
-
-    // Trial de 15 dias com cartão obrigatório, uma única vez por organização.
-    // O Stripe valida o cartão via SetupIntent, cobra no fim do trial e ancora
-    // o ciclo mensal nessa data.
-    const startsTrial = !organization.trialUsedAt;
 
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
@@ -84,7 +73,6 @@ export async function POST(request: NextRequest) {
       currency,
       customer: stripeCustomerId,
       line_items: [{ price, quantity: 1 }],
-      payment_method_collection: "always",
       success_url: absoluteUrl(
         "/api/billing/confirm?session_id={CHECKOUT_SESSION_ID}"
       ),
@@ -94,7 +82,6 @@ export async function POST(request: NextRequest) {
       metadata: { app: "approove", organizationId: organization.id, plan, from },
       subscription_data: {
         metadata: { app: "approove", organizationId: organization.id, plan },
-        ...(startsTrial ? { trial_period_days: TRIAL_DAYS } : {}),
       },
     };
 
@@ -103,8 +90,6 @@ export async function POST(request: NextRequest) {
     try {
       session = await stripe.checkout.sessions.create(params);
     } catch (error) {
-      // Um cliente que já assinou fica travado na moeda original; nesse caso o
-      // Stripe recusa a moeda nova e reabrimos o Checkout na moeda do cliente.
       if (!isCurrencyMismatch(error)) throw error;
 
       session = await stripe.checkout.sessions.create({

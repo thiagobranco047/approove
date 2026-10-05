@@ -14,6 +14,23 @@ export async function getPostForOrganization(postId: string, organizationId: str
   });
 }
 
+export async function getAttachmentForOrganization(
+  attachmentId: string,
+  organizationId: string
+) {
+  return prisma.postAttachment.findFirst({
+    where: {
+      id: attachmentId,
+      postItem: {
+        calendarVersion: { client: { organizationId } },
+      },
+    },
+    include: {
+      postItem: { select: { id: true, status: true } },
+    },
+  });
+}
+
 export async function isOrganizationMember(userId: string, organizationId: string) {
   const membership = await prisma.membership.findFirst({
     where: { userId, organizationId },

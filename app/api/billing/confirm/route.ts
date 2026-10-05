@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     const target =
       session.metadata?.from === "paywall"
-        ? "/onboarding?billing=success"
+        ? "/dashboard?billing=success"
         : "/dashboard/settings?billing=success";
 
     return NextResponse.redirect(absoluteUrl(target));

@@ -101,6 +101,13 @@ export function BillingActions({
         })}
       </div>
 
+      <p className="text-sm text-muted-foreground">
+        {tr(
+          "Assinar durante o teste inicia a cobrança imediatamente e encerra o período grátis. Downgrade pelo portal não apaga clientes ou membros; se você estiver acima do limite do plano novo, o portal pode aceitar a troca, mas o app bloqueia novos cadastros até você reduzir o uso.",
+          "Subscribing during the trial starts billing immediately and ends the free period. A portal downgrade does not delete clients or members; if you are over the new plan’s limits, the portal may still switch you, but the app blocks new records until usage is reduced."
+        )}
+      </p>
+
       {hasStripeCustomer && (
         <Button
           variant="outline"

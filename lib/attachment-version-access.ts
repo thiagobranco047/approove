@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
 
 export async function getAttachmentVersionForOrganization(versionId: string, organizationId: string) {
   return prisma.attachmentVersion.findFirst({
@@ -14,7 +13,7 @@ export async function getAttachmentVersionForOrganization(versionId: string, org
       },
     },
     include: {
-      postAttachment: { select: { id: true, type: true } },
+      postAttachment: { select: { id: true, type: true, postItemId: true } },
       slides: { orderBy: { order: "asc" } },
     },
   });

@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { requireOrganization } from "@/lib/auth";
 import { isProductionStage } from "@/lib/production-stages";
 import { getPostForOrganization, isOrganizationMember } from "@/lib/post-access";
-import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
+import { actorFromAuth, recordSubmittedForReview } from "@/lib/approval";
+import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
 
 const handoffSchema = z.object({
   assigneeId: z.string().nullable().optional(),
@@ -54,6 +55,8 @@ export async function PATCH(
       }
     }
 
+    const previousStage = post.productionStage;
+
     const updatedPost = await prisma.postItem.update({
       where: { id: postId },
       data: {
@@ -64,6 +67,13 @@ export async function PATCH(
         ...(data.handoffNote !== undefined && { handoffNote: data.handoffNote || null }),
       },
       include: postInclude,
+    });
+
+    await recordSubmittedForReview({
+      postItemId: postId,
+      previousStage,
+      nextStage: data.productionStage,
+      actor: actorFromAuth({ isAgency: true, access: null, user }),
     });
 
     return NextResponse.json({ post: updatedPost });

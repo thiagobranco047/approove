@@ -13,7 +13,10 @@ export async function GET(request: NextRequest) {
 
     const result = await validateShareToken(token, { clientSlug, versionId });
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json(
+        { error: result.error, code: result.code },
+        { status: result.status }
+      );
     }
 
     await touchInviteAccess(result.access.shareTokenId);

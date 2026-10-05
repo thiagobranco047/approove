@@ -10,8 +10,8 @@ export type PlanCurrency = "usd" | "brl";
  */
 export const PLAN_AMOUNTS: Record<PaidPlan, Record<PlanCurrency, number>> = {
   starter: { usd: 2500, brl: 19700 },
-  pro: { usd: 7500, brl: 49700 },
-  studio: { usd: 15000, brl: 99700 },
+  pro: { usd: 7500, brl: 39700 },
+  studio: { usd: 15000, brl: 79700 },
 };
 
 export function currencyForLocale(locale: AppLocale): PlanCurrency {

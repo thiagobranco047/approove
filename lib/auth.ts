@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "./prisma";
+import { ensureOrganizationForUser } from "@/lib/ensure-organization";
 
 export async function getSession() {
   const session = await auth();
@@ -38,7 +39,15 @@ export async function requireOrganization() {
     throw new Error("Unauthorized");
   }
 
-  const membership = await getUserOrganization(user.id);
+  let membership = await getUserOrganization(user.id);
+
+  if (!membership) {
+    membership = await ensureOrganizationForUser({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
+  }
 
   if (!membership) {
     throw new Error("No organization");

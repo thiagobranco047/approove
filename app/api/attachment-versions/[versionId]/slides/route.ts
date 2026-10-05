@@ -11,6 +11,7 @@ import {
   syncVersionCoverFromSlides,
 } from "@/lib/attachment-version-access";
 import { inferMediaType } from "@/lib/media-utils";
+import { actorFromAuth, invalidateApprovalIfNeeded } from "@/lib/approval";
 
 const addSlideSchema = z.object({
   url: z.string().min(1, "URL obrigatória"),
@@ -33,7 +34,7 @@ export async function POST(
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization, user } = await requireOrganization();
     const { versionId } = await params;
     const body = await request.json();
     const data = addSlideSchema.parse(body);
@@ -58,6 +59,11 @@ export async function POST(
     await syncVersionCoverFromSlides(versionId, renumbered);
 
     const updated = await loadVersionResponse(versionId);
+    await invalidateApprovalIfNeeded({
+      postId: version.postAttachment.postItemId,
+      reason: "slide_added",
+      actor: actorFromAuth({ isAgency: true, access: null, user }),
+    });
     return NextResponse.json({ version: updated });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
@@ -76,7 +82,7 @@ export async function PATCH(
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization, user } = await requireOrganization();
     const { versionId } = await params;
     const body = await request.json();
     const data = reorderSchema.parse(body);
@@ -109,6 +115,11 @@ export async function PATCH(
     await syncVersionCoverFromSlides(versionId, renumbered);
 
     const updated = await loadVersionResponse(versionId);
+    await invalidateApprovalIfNeeded({
+      postId: version.postAttachment.postItemId,
+      reason: "slide_reordered",
+      actor: actorFromAuth({ isAgency: true, access: null, user }),
+    });
     return NextResponse.json({ version: updated });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
@@ -127,7 +138,7 @@ export async function DELETE(
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization, user } = await requireOrganization();
     const { versionId } = await params;
     const { slideId } = await request.json();
 
@@ -159,6 +170,11 @@ export async function DELETE(
     await syncVersionCoverFromSlides(versionId, renumbered);
 
     const updated = await loadVersionResponse(versionId);
+    await invalidateApprovalIfNeeded({
+      postId: version.postAttachment.postItemId,
+      reason: "slide_removed",
+      actor: actorFromAuth({ isAgency: true, access: null, user }),
+    });
     return NextResponse.json({ version: updated });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {

@@ -5,6 +5,7 @@ import { requireOrganization } from "@/lib/auth";
 import { isProductionStage } from "@/lib/production-stages";
 import { getPostForOrganization, isOrganizationMember } from "@/lib/post-access";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
+import { actorFromAuth, invalidateApprovalIfNeeded, recordSubmittedForReview } from "@/lib/approval";
 
 const updatePostSchema = z.object({
   scheduledAt: z.string().optional(),
@@ -63,6 +64,33 @@ export async function PATCH(
       data.productionStage !== undefined && data.productionStage !== post.productionStage;
     const shouldStampHandoff = assigneeChanged || stageChanged;
 
+    const copyChanged =
+      data.copyText !== undefined && data.copyText !== post.copyText;
+    const titleChanged =
+      data.title !== undefined && data.title.trim() !== post.title;
+
+    const actor = actorFromAuth({
+      isAgency: true,
+      access: null,
+      user,
+    });
+
+    if (copyChanged) {
+      await invalidateApprovalIfNeeded({
+        postId,
+        reason: "copy_changed",
+        actor,
+      });
+    } else if (titleChanged) {
+      await invalidateApprovalIfNeeded({
+        postId,
+        reason: "title_changed",
+        actor,
+      });
+    }
+
+    const previousStage = post.productionStage;
+
     const updatedPost = await prisma.postItem.update({
       where: { id: postId },
       data: {
@@ -80,6 +108,15 @@ export async function PATCH(
       },
       include: postInclude,
     });
+
+    if (data.productionStage) {
+      await recordSubmittedForReview({
+        postItemId: postId,
+        previousStage,
+        nextStage: data.productionStage,
+        actor,
+      });
+    }
 
     return NextResponse.json({ post: updatedPost });
   } catch (error) {

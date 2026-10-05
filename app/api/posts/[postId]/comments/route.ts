@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { authorizeShareOrSession } from "@/lib/share-access";
+import { isPostVisibleToClient } from "@/lib/client-content-boundary";
 
 export async function POST(
   request: NextRequest,
@@ -29,7 +30,11 @@ export async function POST(
 
     const authResult = await authorizeShareOrSession(token, post.calendarVersionId);
     if (!authResult.ok) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+      return NextResponse.json({ error: authResult.error, code: "code" in authResult ? authResult.code : undefined }, { status: authResult.status });
+    }
+
+    if (!authResult.isAgency && !isPostVisibleToClient(post.productionStage)) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     if (!authResult.isAgency && !authResult.access?.permissions.canComment) {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireOrganization } from "@/lib/auth";
 import { z } from "zod";
 import { planAllows, planLimitResponse } from "@/lib/plan-limits";
+import { getEffectivePlan } from "@/lib/billing-access";
 import { sendEmail } from "@/lib/email";
 import { buildMemberInviteEmail } from "@/lib/email-templates/member-invite";
 
@@ -80,9 +81,9 @@ export async function POST(request: NextRequest) {
     const memberCount = await prisma.membership.count({
       where: { organizationId: organization.id },
     });
-    if (!planAllows(organization.plan, "members", memberCount)) {
+    if (!planAllows(getEffectivePlan(organization), "members", memberCount)) {
       return NextResponse.json(
-        planLimitResponse(organization.plan, "members", memberCount),
+        planLimitResponse(getEffectivePlan(organization), "members", memberCount),
         { status: 403 }
       );
     }

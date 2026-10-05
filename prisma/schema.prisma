@@ -79,6 +79,7 @@ model User {
   assignedPosts PostItem[] @relation("PostAssignee")
   postsHandedOff PostItem[] @relation("PostHandedOffBy")
   passwordResetTokens PasswordResetToken[]
+  statusEvents  PostStatusEvent[] @relation("StatusEventActorUser")
 }
 
 model Organization {
@@ -92,6 +93,7 @@ model Organization {
   plan                 String    @default("free")
   currentPeriodEnd     DateTime?
   trialUsedAt          DateTime?
+  trialEndsAt          DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -149,6 +151,7 @@ model ClientReviewer {
   invites      ClientInvite[]
   comments     Comment[]
   pins         AnnotationPin[]
+  statusEvents PostStatusEvent[] @relation("StatusEventActorReviewer")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -202,6 +205,7 @@ model PostItem {
   calendarVersion CalendarVersion @relation(fields: [calendarVersionId], references: [id], onDelete: Cascade)
   comments        Comment[]
   attachments     PostAttachment[]
+  statusEvents    PostStatusEvent[]
   assignee        User?           @relation("PostAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   assignedBy      User?           @relation("PostHandedOffBy", fields: [assignedById], references: [id], onDelete: SetNull)
 
@@ -274,6 +278,34 @@ model AnnotationPin {
   @@index([attachmentVersionId])
   @@index([attachmentSlideId])
   @@index([reviewerId])
+}
+
+model PostStatusEvent {
+  id                   String    @id @default(cuid())
+  postItemId           String
+  type                 String // submitted_for_review, changes_requested, approved, approval_invalidated
+  fromStatus           String?
+  toStatus             String?
+  actorType            String // agency, client, system
+  actorUserId          String?
+  actorReviewerId      String?
+  actorNameSnapshot    String
+  visibility           String    @default("client") // client, agency
+  invalidationReason   String? // copy_changed, title_changed, creative_version_added, ...
+  copySnapshot         String?
+  titleSnapshot        String?
+  channelSnapshot      String?
+  scheduledAtSnapshot  DateTime?
+  creativesSnapshot    String? // JSON documental do pacote aprovado
+  createdAt            DateTime  @default(now())
+
+  postItem      PostItem        @relation(fields: [postItemId], references: [id], onDelete: Cascade)
+  actorUser     User?           @relation("StatusEventActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorReviewer ClientReviewer? @relation("StatusEventActorReviewer", fields: [actorReviewerId], references: [id], onDelete: SetNull)
+
+  @@index([postItemId, createdAt])
+  @@index([actorUserId])
+  @@index([actorReviewerId])
 }
 
 model Comment {

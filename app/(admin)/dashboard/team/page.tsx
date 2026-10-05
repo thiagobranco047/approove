@@ -282,7 +282,12 @@ export default function TeamPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-destructive">{error}</p>
+                <div className="space-y-1">
+                  <p className="text-sm text-destructive">{error}</p>
+                  <a href="/dashboard/settings" className="text-sm font-semibold underline">
+                    {tr("Ver planos", "View plans")}
+                  </a>
+                </div>
               )}
             </div>
 

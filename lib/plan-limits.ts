@@ -4,8 +4,8 @@ export type LimitedResource = "clients" | "members" | "reviewers";
 type PlanLimits = Record<LimitedResource, number | null>;
 
 export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
-  free: { clients: 3, members: 3, reviewers: 10 },
-  starter: { clients: 5, members: 2, reviewers: 10 },
+  free: { clients: 5, members: 2, reviewers: null },
+  starter: { clients: 5, members: 2, reviewers: null },
   pro: { clients: 15, members: 5, reviewers: null },
   studio: { clients: 40, members: 15, reviewers: null },
   enterprise: { clients: null, members: null, reviewers: null },
@@ -19,10 +19,10 @@ const planLabels: Record<PlanName, string> = {
   enterprise: "Enterprise",
 };
 
-const resourceLabels: Record<LimitedResource, string> = {
-  clients: "clientes",
-  members: "usuários",
-  reviewers: "revisores ativos",
+const resourceLabels: Record<LimitedResource, { singular: string; plural: string }> = {
+  clients: { singular: "cliente", plural: "clientes" },
+  members: { singular: "usuário da agência", plural: "usuários da agência" },
+  reviewers: { singular: "revisor ativo", plural: "revisores ativos" },
 };
 
 export function normalizePlan(plan: string | null | undefined): PlanName {
@@ -59,15 +59,16 @@ export function planLimitResponse(
 ) {
   const normalizedPlan = normalizePlan(plan);
   const limit = getPlanLimit(normalizedPlan, resource);
+  const labels = resourceLabels[resource];
+  const unit = limit === 1 ? labels.singular : labels.plural;
 
   return {
-    error: `Limite do plano ${planLabels[normalizedPlan]} atingido: ${limit} ${
-      resourceLabels[resource]
-    }.`,
-    code: "PLAN_LIMIT_REACHED",
+    error: `Seu plano ${planLabels[normalizedPlan]} permite até ${limit} ${unit}.`,
+    code: "PLAN_LIMIT_REACHED" as const,
     plan: normalizedPlan,
     resource,
     current: currentCount,
     limit,
+    upgradePath: "/dashboard/settings",
   };
 }

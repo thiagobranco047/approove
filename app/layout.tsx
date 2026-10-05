@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { getRequestLocale } from "@/lib/request-locale";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { AnalyticsRouteTracker } from "@/components/analytics-route-tracker";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { CookieConsent } from "@/components/cookie-consent";
@@ -15,15 +16,20 @@ const inter = Inter({ subsets: ["latin"] });
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
 
-  return locale === "pt-BR"
-    ? {
-        title: "Approove - Validação de Calendário Editorial",
-        description: "Plataforma de aprovação de conteúdo para redes sociais. Organize, colabore e aprove publicações com seu time e clientes.",
-      }
-    : {
-        title: "Approove - Editorial Calendar Approval",
-        description: "Content approval for social media teams. Organize, collaborate, and approve posts with your team and clients.",
-      };
+  return {
+    metadataBase: new URL(getAppBaseUrl()),
+    ...(locale === "pt-BR"
+      ? {
+          title: "Approove — Aprovação de conteúdo para agências",
+          description:
+            "Calendário editorial e fluxo de aprovação com clientes. Organize, revise e registre o que foi aprovado.",
+        }
+      : {
+          title: "Approove — Content approval for agencies",
+          description:
+            "Editorial calendar and client approval workflow. Organize, review, and record what was approved.",
+        }),
+  };
 }
 
 export default async function RootLayout({

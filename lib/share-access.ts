@@ -1,7 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { hasProductAccess } from "@/lib/billing-access";
+import {
+  WORKSPACE_UNAVAILABLE_CODE,
+  WORKSPACE_UNAVAILABLE_MESSAGE,
+} from "@/lib/workspace-unavailable";
 
 export type ClientInviteRole = "viewer" | "reviewer" | "approver";
+
+function workspaceUnavailable() {
+  return {
+    ok: false as const,
+    error: WORKSPACE_UNAVAILABLE_MESSAGE,
+    status: 403,
+    code: WORKSPACE_UNAVAILABLE_CODE,
+  };
+}
 
 export interface ShareAccessContext {
   shareTokenId: string;
@@ -20,6 +34,8 @@ export interface ShareAccessContext {
     canPin: boolean;
     canApprove: boolean;
   };
+  /** Token without ClientInvite — treated as approver. Keep until we retire anonymous share links. */
+  isLegacy: boolean;
 }
 
 export function rolePermissions(role: ClientInviteRole) {
@@ -72,12 +88,13 @@ export async function authorizeCalendarView(
   versionId: string
 ): Promise<
   | { ok: true; isAgency: boolean; access: ShareAccessContext | null; calendarVersionId: string }
-  | { ok: false; error: string; status: number }
+  | { ok: false; error: string; status: number; code?: string }
 > {
   const session = await auth();
   if (session?.user?.id) {
     const membership = await prisma.membership.findFirst({
       where: { userId: session.user.id },
+      include: { organization: true },
       orderBy: { createdAt: "asc" },
     });
 
@@ -90,6 +107,9 @@ export async function authorizeCalendarView(
       });
 
       if (version) {
+        if (!hasProductAccess(membership.organization)) {
+          return workspaceUnavailable();
+        }
         return {
           ok: true,
           isAgency: true,
@@ -120,13 +140,16 @@ export async function authorizeCalendarView(
 export async function validateShareToken(
   token: string,
   options?: { clientSlug?: string; versionId?: string }
-): Promise<{ ok: true; access: ShareAccessContext } | { ok: false; error: string; status: number }> {
+): Promise<
+  | { ok: true; access: ShareAccessContext }
+  | { ok: false; error: string; status: number; code?: string }
+> {
   const shareToken = await prisma.shareToken.findUnique({
     where: { token },
     include: {
       calendarVersion: {
         include: {
-          client: true,
+          client: { include: { organization: true } },
         },
       },
       invite: {
@@ -156,6 +179,10 @@ export async function validateShareToken(
 
   const { calendarVersion } = shareToken;
   const client = calendarVersion.client;
+
+  if (!hasProductAccess(client.organization)) {
+    return workspaceUnavailable();
+  }
 
   if (options?.clientSlug && client.slug !== options.clientSlug) {
     return { ok: false, error: "Token não corresponde ao cliente", status: 403 };
@@ -189,11 +216,13 @@ export async function validateShareToken(
           role,
         },
         permissions: rolePermissions(role),
+        isLegacy: false,
       },
     };
   }
 
-  // Legacy token without invite — full client access
+  // Legacy token without invite — full client access (approver).
+  // Kept for existing share links; do not treat as named reviewer.
   return {
     ok: true,
     access: {
@@ -204,6 +233,7 @@ export async function validateShareToken(
       calendarVersion: calendarVersion.version,
       reviewer: null,
       permissions: rolePermissions("approver"),
+      isLegacy: true,
     },
   };
 }
@@ -240,12 +270,13 @@ export async function authorizeShareOrSession(
   calendarVersionId: string
 ): Promise<
   | { ok: true; isAgency: boolean; access: ShareAccessContext | null }
-  | { ok: false; error: string; status: number }
+  | { ok: false; error: string; status: number; code?: string }
 > {
   const session = await auth();
   if (session?.user?.id) {
     const membership = await prisma.membership.findFirst({
       where: { userId: session.user.id },
+      include: { organization: true },
       orderBy: { createdAt: "asc" },
     });
 
@@ -259,6 +290,9 @@ export async function authorizeShareOrSession(
       });
 
       if (ownsCalendar) {
+        if (!hasProductAccess(membership.organization)) {
+          return workspaceUnavailable();
+        }
         return { ok: true, isAgency: true, access: null };
       }
     }

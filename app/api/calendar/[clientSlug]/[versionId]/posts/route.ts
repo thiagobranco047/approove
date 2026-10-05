@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeCalendarView, rolePermissions, touchInviteAccess } from "@/lib/share-access";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
+import { CLIENT_VISIBLE_PRODUCTION_STAGE } from "@/lib/client-content-boundary";
+import { serializeAgencyPost, serializeClientPost } from "@/lib/post-serializer";
+
+const publicPostInclude = {
+  comments: {
+    orderBy: { createdAt: "asc" as const },
+  },
+  attachments: {
+    orderBy: { order: "asc" as const },
+    include: {
+      versions: attachmentVersionInclude,
+    },
+  },
+  statusEvents: {
+    orderBy: { createdAt: "asc" as const },
+  },
+};
+
+const agencyPostInclude = {
+  ...publicPostInclude,
+  assignee: { select: { id: true, name: true, email: true } },
+  assignedBy: { select: { id: true, name: true, email: true } },
+};
 
 export async function GET(
   request: NextRequest,
@@ -13,50 +36,46 @@ export async function GET(
 
     const authResult = await authorizeCalendarView(token, clientSlug, versionId);
     if (!authResult.ok) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+      return NextResponse.json(
+        { error: authResult.error, code: authResult.code },
+        { status: authResult.status }
+      );
     }
 
     if (!authResult.isAgency && authResult.access) {
       await touchInviteAccess(authResult.access.shareTokenId);
     }
 
-    const postInclude = {
-      comments: {
-        orderBy: { createdAt: "asc" as const },
-      },
-      attachments: {
-        orderBy: { order: "asc" as const },
-        include: {
-          versions: attachmentVersionInclude,
-        },
-      },
-      ...(authResult.isAgency && {
-        assignee: { select: { id: true, name: true, email: true } },
-        assignedBy: { select: { id: true, name: true, email: true } },
-      }),
-    };
-
     const posts = await prisma.postItem.findMany({
       where: {
         calendarVersionId: authResult.calendarVersionId,
+        ...(!authResult.isAgency && {
+          productionStage: CLIENT_VISIBLE_PRODUCTION_STAGE,
+        }),
       },
-      include: postInclude,
+      include: authResult.isAgency ? agencyPostInclude : publicPostInclude,
       orderBy: {
         scheduledAt: "asc",
       },
     });
 
+    const serialized = authResult.isAgency
+      ? posts.map(serializeAgencyPost)
+      : posts.map(serializeClientPost);
+
     return NextResponse.json({
-      posts,
+      posts: serialized,
       isAdmin: authResult.isAgency,
       access: authResult.isAgency
         ? {
             reviewer: null,
             permissions: rolePermissions("approver"),
+            legacy: false,
           }
         : {
             reviewer: authResult.access!.reviewer,
             permissions: authResult.access!.permissions,
+            legacy: authResult.access!.isLegacy,
           },
     });
   } catch (error) {

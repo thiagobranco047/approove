@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireOrganization } from "@/lib/auth";
-import { hasBillingAccess } from "@/lib/billing-access";
+import { shouldRedirectFromSubscribe, subscribeCopyKind } from "@/lib/billing-access";
 import { getRequestLocale } from "@/lib/request-locale";
 import { SubscribePlans } from "./subscribe-plans";
 
@@ -15,7 +15,7 @@ export default async function SubscribePage() {
 
   const { membership, organization } = context;
 
-  if (hasBillingAccess(organization)) {
+  if (shouldRedirectFromSubscribe(organization)) {
     redirect("/dashboard");
   }
 
@@ -28,7 +28,7 @@ export default async function SubscribePage() {
       locale={locale}
       organizationName={organization.name}
       canManageBilling={canManageBilling}
-      trialUsed={Boolean(organization.trialUsedAt)}
+      copyKind={subscribeCopyKind(organization)}
     />
   );
 }
