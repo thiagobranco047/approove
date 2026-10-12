@@ -4,6 +4,7 @@ import { getPlanLimit, planAllows, PLAN_LIMITS, planLimitResponse } from "./plan
 describe("plan limits v2", () => {
   it("makes reviewers unlimited on every paid plan and free/trial", () => {
     expect(PLAN_LIMITS.free.reviewers).toBeNull();
+    expect(PLAN_LIMITS.solo.reviewers).toBeNull();
     expect(PLAN_LIMITS.starter.reviewers).toBeNull();
     expect(PLAN_LIMITS.pro.reviewers).toBeNull();
     expect(PLAN_LIMITS.studio.reviewers).toBeNull();
@@ -11,6 +12,19 @@ describe("plan limits v2", () => {
     expect(planAllows("starter", "reviewers", 99)).toBe(true);
     expect(planAllows("pro", "reviewers", 100)).toBe(true);
     expect(planAllows("studio", "reviewers", 100)).toBe(true);
+  });
+
+  it("enforces Solo as the entry cap, with singular member wording", () => {
+    expect(getPlanLimit("solo", "clients")).toBe(2);
+    expect(getPlanLimit("solo", "members")).toBe(1);
+    expect(planAllows("solo", "clients", 2)).toBe(false);
+    expect(planAllows("solo", "clients", 1)).toBe(true);
+    expect(planAllows("solo", "members", 1)).toBe(false);
+    expect(planAllows("solo", "reviewers", 40)).toBe(true);
+
+    const response = planLimitResponse("solo", "members", 1);
+    expect(response.error).toContain("1 usuário da agência");
+    expect(response.error).not.toContain("usuários");
   });
 
   it("enforces Starter client and member caps", () => {

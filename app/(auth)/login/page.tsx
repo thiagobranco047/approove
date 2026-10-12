@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { useLocale } from "@/components/locale-provider";
 import { localizedText } from "@/lib/locale";
+import { googleAuthErrorMessage } from "@/lib/google-auth";
 
 function LoginForm() {
   const locale = useLocale();
@@ -19,6 +20,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const oauthError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,8 +56,26 @@ function LoginForm() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl });
+    setError("");
+    try {
+      const result = await signIn("google", { callbackUrl, redirect: false });
+      if (result?.error) {
+        setError(googleAuthErrorMessage(result.error, tr));
+        setGoogleLoading(false);
+        return;
+      }
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+      setGoogleLoading(false);
+    } catch {
+      setError(tr("Não foi possível entrar com o Google.", "Unable to continue with Google."));
+      setGoogleLoading(false);
+    }
   };
+
+  const visibleError = error || (oauthError ? googleAuthErrorMessage(oauthError, tr) : "");
 
   return (
     <div className="space-y-6">
@@ -70,6 +90,12 @@ function LoginForm() {
           {tr("Entre com sua conta para acessar o dashboard", "Log in to access your dashboard")}
         </p>
       </div>
+
+      {visibleError && (
+        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+          {visibleError}
+        </div>
+      )}
 
       <Button
         variant="outline"
@@ -114,12 +140,6 @@ function LoginForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-            {error}
-          </div>
-        )}
-
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input

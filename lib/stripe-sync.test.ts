@@ -13,21 +13,25 @@ function restoreEnv(key: string, value: string | undefined) {
 describe("planFromPrice", () => {
   it("maps current and legacy env price ids", () => {
     const previous = {
+      solo: process.env.STRIPE_PRICE_SOLO,
       starter: process.env.STRIPE_PRICE_STARTER,
       starterLegacy: process.env.STRIPE_PRICE_STARTER_LEGACY,
       pro: process.env.STRIPE_PRICE_PRO,
     };
 
     try {
+      process.env.STRIPE_PRICE_SOLO = "price_solo_v2";
       process.env.STRIPE_PRICE_STARTER = "price_starter_v2";
       process.env.STRIPE_PRICE_STARTER_LEGACY = "price_starter_old";
       process.env.STRIPE_PRICE_PRO = "price_pro_v2";
 
+      expect(planFromPrice("price_solo_v2")).toBe("solo");
       expect(planFromPrice("price_starter_v2")).toBe("starter");
       expect(planFromPrice("price_starter_old")).toBe("starter");
       expect(planFromPrice("price_pro_v2")).toBe("pro");
       expect(planFromPrice("price_unknown")).toBe("free");
     } finally {
+      restoreEnv("STRIPE_PRICE_SOLO", previous.solo);
       restoreEnv("STRIPE_PRICE_STARTER", previous.starter);
       restoreEnv("STRIPE_PRICE_STARTER_LEGACY", previous.starterLegacy);
       restoreEnv("STRIPE_PRICE_PRO", previous.pro);

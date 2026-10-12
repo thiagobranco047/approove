@@ -1,10 +1,11 @@
-export type PlanName = "free" | "starter" | "pro" | "studio" | "enterprise";
+export type PlanName = "free" | "solo" | "starter" | "pro" | "studio" | "enterprise";
 export type LimitedResource = "clients" | "members" | "reviewers";
 
 type PlanLimits = Record<LimitedResource, number | null>;
 
 export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
   free: { clients: 5, members: 2, reviewers: null },
+  solo: { clients: 2, members: 1, reviewers: null },
   starter: { clients: 5, members: 2, reviewers: null },
   pro: { clients: 15, members: 5, reviewers: null },
   studio: { clients: 40, members: 15, reviewers: null },
@@ -13,6 +14,7 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
 
 const planLabels: Record<PlanName, string> = {
   free: "Free",
+  solo: "Solo",
   starter: "Starter",
   pro: "Pro",
   studio: "Studio",
@@ -28,6 +30,7 @@ const resourceLabels: Record<LimitedResource, { singular: string; plural: string
 export function normalizePlan(plan: string | null | undefined): PlanName {
   if (plan === "agency") return "pro";
   if (
+    plan === "solo" ||
     plan === "starter" ||
     plan === "pro" ||
     plan === "studio" ||

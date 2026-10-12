@@ -35,6 +35,7 @@ delete process.env.TURSO_DATABASE_URL;
 delete process.env.TURSO_AUTH_TOKEN;
 
 function planFromPrice(priceId: string | null | undefined) {
+  if (priceId && process.env.STRIPE_PRICE_SOLO === priceId) return "solo";
   if (priceId && process.env.STRIPE_PRICE_STARTER === priceId) return "starter";
   if (priceId && process.env.STRIPE_PRICE_PRO === priceId) return "pro";
   if (priceId && process.env.STRIPE_PRICE_STUDIO === priceId) return "studio";

@@ -176,7 +176,7 @@ Use Stripe em modo sandbox/teste.
 
 1. Autentique o Stripe CLI ou MCP na conta da empresa.
 2. Crie produtos/preços com prefixo `Approove SaaS` para separar este app dos outros produtos da conta.
-3. Copie os Price IDs para `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_STUDIO`.
+3. Copie os Price IDs para `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_STUDIO`.
 4. Crie uma configuração do Customer Portal para os produtos `Approove SaaS` e copie o ID para `STRIPE_PORTAL_CONFIGURATION_ID`.
 5. Rode o listener de webhook:
    ```bash
@@ -189,6 +189,7 @@ Objetos sandbox criados para este app:
 
 | Plano | Produto Stripe | Preço |
 |-------|----------------|-------|
+| Solo | `Approove SaaS - Solo` | US$15/mês |
 | Starter | `Approove SaaS - Starter` | US$25/mês |
 | Pro | `Approove SaaS - Pro` | US$75/mês |
 | Studio | `Approove SaaS - Studio` | US$150/mês |
@@ -197,9 +198,10 @@ Cada Price usa USD como moeda padrão e inclui uma opção manual para o Brasil:
 
 | Plano | Brasil |
 |---|---:|
+| Solo | R$97/mês |
 | Starter | R$197/mês |
-| Pro | R$497/mês |
-| Studio | R$997/mês |
+| Pro | R$397/mês |
+| Studio | R$797/mês |
 
 O Stripe Checkout seleciona BRL automaticamente para clientes no Brasil. Em
 países sem uma opção de moeda configurada, o Checkout usa o USD padrão. A
@@ -432,7 +434,7 @@ Storage estimado com **original em alta (HQ) + preview comprimido** para revisor
 
 ### Matriz de funcionalidades × plano
 
-Legenda: ✅ incluído · 🔜 roadmap · — não incluído
+Legenda: ✅ incluído · 🔜 feature futura no plano · — não incluído
 
 | Funcionalidade | Starter | Agency | Studio | Enterprise | Status no produto |
 |----------------|---------|--------|--------|------------|-------------------|
@@ -445,23 +447,23 @@ Legenda: ✅ incluído · 🔜 roadmap · — não incluído
 | Multi-empresa por revisor | ✅ | ✅ | ✅ | ✅ | Concluído |
 | Upload de mídia (Blob / futuro S3) | ✅ | ✅ | ✅ | ✅ | Concluído |
 | Gestão de time (seats) | ✅ | ✅ | ✅ | ✅ | Concluído |
-| Branding leve (logo do cliente no link) | — | ✅ | ✅ | ✅ | Pendente |
+| Branding leve (logo do cliente no link) | — | ✅ | ✅ | ✅ | Feature futura |
 | Histórico de versões (auditoria por post/arte) | — | ✅ | ✅ | ✅ | Parcial* |
-| E-mail ao convidar revisor | — | ✅ | ✅ | ✅ | Pendente |
-| Notificações por e-mail | — | ✅ | ✅ | ✅ | Pendente |
-| ClientAssignment (time ↔ clientes) | — | — | ✅ | ✅ | Pendente |
-| Subdomínio por cliente | — | — | ✅ | ✅ | Pendente |
-| Exportações (ZIP HQ, PDF calendário, relatório) | — | — | ✅ | ✅ | Pendente |
-| Preview comprimido / download HQ separado | — | 🔜 | ✅ | ✅ | Pendente |
-| Arquivamento automático (HQ → cold / remove) | ✅ básico | ✅ | ✅ | ✅ | Pendente |
-| Consulta de calendários antigos (só preview) | ✅ (12 meses) | ✅ | ✅ | ✅ | Pendente |
-| Restore de original HQ arquivado | — | 🔜 (90 dias) | ✅ (1 ano) | ✅ | Pendente |
-| Permissões avançadas | — | — | — | ✅ | Pendente |
-| White-label completo | — | — | — | ✅ | Pendente |
-| SSO / multi-org | — | — | — | ✅ | Futuro |
-| Webhooks e integrações | — | — | 🔜 | ✅ | Futuro |
+| E-mail ao convidar revisor | — | ✅ | ✅ | ✅ | Concluído |
+| Notificações por e-mail | — | ✅ | ✅ | ✅ | Feature futura |
+| ClientAssignment (time ↔ clientes) | — | — | ✅ | ✅ | Feature futura |
+| Subdomínio por cliente | — | — | ✅ | ✅ | Feature futura |
+| Exportações (ZIP HQ, PDF calendário, relatório) | — | — | ✅ | ✅ | Feature futura |
+| Preview comprimido / download HQ separado | — | 🔜 | ✅ | ✅ | Feature futura |
+| Arquivamento automático (HQ → cold / remove) | ✅ básico | ✅ | ✅ | ✅ | Feature futura |
+| Consulta de calendários antigos (só preview) | ✅ (12 meses) | ✅ | ✅ | ✅ | Feature futura |
+| Restore de original HQ arquivado | — | 🔜 (90 dias) | ✅ (1 ano) | ✅ | Feature futura |
+| Permissões avançadas | — | — | — | ✅ | Feature futura |
+| White-label completo | — | — | — | ✅ | Feature futura |
+| SSO / multi-org | — | — | — | ✅ | Feature futura |
+| Webhooks e integrações | — | — | 🔜 | ✅ | Feature futura |
 
-\*Versionamento de artes existe (`AttachmentVersion`); log de auditoria completo ainda está no roadmap.
+\*Versionamento de artes existe (`AttachmentVersion`). O log de auditoria completo é feature futura.
 
 ### Detalhe por plano
 
@@ -477,7 +479,7 @@ Legenda: ✅ incluído · 🔜 roadmap · — não incluído
 - Tudo do Starter, até **15 clientes**, **5 usuários**, revisores **ilimitados**
 - **Branding leve** (logo do cliente na visão de aprovação)
 - **Histórico de versões** (auditoria de artes)
-- E-mail de convite e notificações *(quando lançados)*
+- E-mail de convite (no ar) e notificações por e-mail *(feature futura)*
 - ~**R$ 33/cliente/mês** no teto do plano — posicionamento principal de marketing
 - **Arquivamento:** originais HQ → **cold storage (Glacier)** por **90 dias** após fechamento; consulta histórica **ilimitada** via preview no app
 
@@ -555,10 +557,10 @@ Com **arquivamento**, o storage **ativo** (fair use) considera só calendários 
 
 ### Billing (implementação)
 
-- [ ] Integração **Stripe** (checkout, portal do cliente, webhooks)
-- [ ] Enforcement de limites (clientes, seats, storage ativo, revisores) por `Organization`
-- [ ] Landing page com pricing e CTA de trial Agency
-- [ ] Jobs de **arquivamento** (HQ → Glacier/remoção) e retenção de preview por plano
+- [x] Integração **Stripe** (checkout, portal do cliente, webhooks)
+- [x] Enforcement de limites (clientes e usuários da agência) por `Organization`
+- [x] Landing page com pricing e CTA de teste
+- [ ] Jobs de **arquivamento** (HQ → Glacier/remoção) e retenção de preview por plano — feature futura
 
 ---
 
@@ -599,31 +601,33 @@ Com **arquivamento**, o storage **ativo** (fair use) considera só calendários 
 - [x] **UX gestão ↔ calendário** — CTA “Montar calendário e artes” no detalhe do cliente
 - [x] **Checklist de piloto fechado** — deploy, happy path e suporte manual (README)
 
-### Pendências — próximo ciclo (MVP vendável)
+### Features futuras
 
-- [ ] **Notificações por email** — aprovação, ajuste solicitado, novo comentário/pin
+Ainda não fazem parte do produto. Na matriz de funcionalidades, a coluna “Status no produto” usa o mesmo rótulo.
+
+**Produto e operação**
+- [ ] **Notificações por e-mail** — aprovação, ajuste solicitado, novo comentário ou pin
 - [ ] **ClientAssignment** — vincular membros do time a clientes específicos
-- [ ] **Configurações** — conta do usuário e dados da organização
-- [ ] **Landing page comercial** — pricing, CTA de cadastro (ver [Planos e precificação](#planos-e-precificação-proposta-comercial))
-- [ ] **Recuperação de senha** — fluxo self-service (e-mail)
+- [ ] **Configurações da conta** — perfil do usuário e dados da organização além de plano e cobrança
+- [ ] **Branding leve** — logo do cliente no link de aprovação
+- [ ] **Subdomínio por cliente**
+- [ ] **Permissões avançadas**, **white-label** e **SSO / multi-org** (Enterprise)
+- [ ] **Webhooks e integrações** com ferramentas externas
 
-### Pendências — polimento da experiência
+**Mídia e entrega**
+- [ ] **Exportações** — ZIP em HQ, PDF do calendário e relatório de aprovação
+- [ ] **Preview comprimido e download HQ** separados
+- [ ] **Arquivamento de mídia** — hot/warm/cold por plano, calendário fechado e e-mail pré-export
+- [ ] **Consulta de calendários antigos** só com preview e **restore** do original HQ
+- [ ] **Histórico e auditoria** — log de alterações por post e versão
+- [ ] **Preview de vídeo** — player adequado para MP4 (hoje o vídeo entra em slides de carrossel)
 
+**Experiência**
 - [ ] **Anotações avançadas** — desenho livre, círculos e rabiscos na arte (hoje só pins com texto)
-- [ ] **Aprovação em lote** — aprovar/ajustar vários posts de uma vez
-- [ ] **Histórico e auditoria** — log de alterações por post/versão
-- [ ] **Download do calendário** — exportar conteúdo aprovado (PDF) — plano Studio+
-- [ ] **Preview comprimido + download HQ** — originals vs previews (S3/Blob) — plano Agency+/Studio+
-- [ ] **Arquivamento de mídia** — hot/warm/cold por plano; calendário fechado; e-mail pré-export
-- [ ] **Tipos de mídia customizáveis** — organização definir categorias de material
-- [ ] **Preview de vídeo** — player adequado para attachments MP4 *(parcial: vídeo em slides de carrossel)*
-
-### Pendências — futuro (diferenciação)
-
-- [ ] **Billing** — Stripe + enforcement de limites por plano (matriz em [Planos e precificação](#planos-e-precificação-proposta-comercial))
-- [ ] **Integrações com redes sociais** — agendamento/publicação direta
+- [ ] **Aprovação em lote** — aprovar ou pedir ajuste em vários posts de uma vez
+- [ ] **Tipos de mídia customizáveis** — a organização define as categorias de material
+- [ ] **Integrações com redes sociais** — agendamento e publicação direta
 - [ ] **Importar do Canva**
-- [ ] **Webhooks** para ferramentas externas
 - [ ] **App mobile** ou PWA
 
 ---

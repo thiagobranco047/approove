@@ -8,11 +8,12 @@ import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { localizedText, type AppLocale } from "@/lib/locale";
 import { planPrice, type PaidPlan } from "@/lib/pricing";
 
-const planOrder = ["starter", "pro", "studio"] as const;
+const planOrder = ["solo", "starter", "pro", "studio"] as const;
 
 function planPricing(locale: AppLocale): Record<string, { price: string; period?: string }> {
   const paid = (plan: PaidPlan) => planPrice(plan, locale);
   return {
+    solo: paid("solo"),
     starter: paid("starter"),
     pro: paid("pro"),
     studio: paid("studio"),
@@ -28,7 +29,8 @@ export function LandingPricing({ locale }: { locale: AppLocale }) {
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const pricingByPlan = planPricing(locale);
   const planCopy: Record<(typeof planOrder)[number], { name: string; description: string; highlighted?: boolean }> = {
-    starter: { name: "Starter", description: tr("Para começar a carteira", "For a starting client roster") },
+    solo: { name: "Solo", description: tr("Para freelancers com os primeiros clientes", "For freelancers with their first clients") },
+    starter: { name: "Starter", description: tr("Para uma carteira em formação", "For a client roster taking shape") },
     pro: { name: "Pro", description: tr("Para agências em crescimento", "For growing agencies"), highlighted: true },
     studio: { name: "Studio", description: tr("Para operações com muitos clientes", "For operations with many clients") },
   };
@@ -47,7 +49,7 @@ export function LandingPricing({ locale }: { locale: AppLocale }) {
             {tr("15 dias grátis · sem cartão", "15 days free · no credit card")}
           </TrialNote>
         </div>
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {planOrder.map((plan, i) => {
             const { name, description, highlighted } = planCopy[plan];
             const limits = PLAN_LIMITS[plan];

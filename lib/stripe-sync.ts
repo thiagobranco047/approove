@@ -8,6 +8,9 @@ function matchesPrice(priceId: string | null | undefined, ...envKeys: string[]) 
 }
 
 export function planFromPrice(priceId: string | null | undefined) {
+  if (matchesPrice(priceId, "STRIPE_PRICE_SOLO", "STRIPE_PRICE_SOLO_LEGACY")) {
+    return "solo";
+  }
   if (matchesPrice(priceId, "STRIPE_PRICE_STARTER", "STRIPE_PRICE_STARTER_LEGACY")) {
     return "starter";
   }

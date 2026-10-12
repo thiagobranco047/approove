@@ -22,6 +22,7 @@ function loadEnv() {
 loadEnv();
 
 const currentIds: Record<PaidPlan, string | undefined> = {
+  solo: process.env.STRIPE_PRICE_SOLO,
   starter: process.env.STRIPE_PRICE_STARTER,
   pro: process.env.STRIPE_PRICE_PRO,
   studio: process.env.STRIPE_PRICE_STUDIO,
@@ -101,9 +102,13 @@ async function main() {
     }
 
     console.log("\nPut these in .env:\n");
+    console.log(`STRIPE_PRICE_SOLO=${created.solo}`);
     console.log(`STRIPE_PRICE_STARTER=${created.starter}`);
     console.log(`STRIPE_PRICE_PRO=${created.pro}`);
     console.log(`STRIPE_PRICE_STUDIO=${created.studio}`);
+    if (created.solo !== currentIds.solo) {
+      console.log(`STRIPE_PRICE_SOLO_LEGACY=${currentIds.solo}`);
+    }
     if (created.starter !== currentIds.starter) {
       console.log(`STRIPE_PRICE_STARTER_LEGACY=${currentIds.starter}`);
     }

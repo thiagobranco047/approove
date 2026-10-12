@@ -6,6 +6,7 @@ import { PLAN_AMOUNTS, type PaidPlan } from "../lib/pricing";
 import { getStripe } from "../lib/stripe";
 
 const priceIdByPlan: Record<PaidPlan, string | undefined> = {
+  solo: process.env.STRIPE_PRICE_SOLO,
   starter: process.env.STRIPE_PRICE_STARTER,
   pro: process.env.STRIPE_PRICE_PRO,
   studio: process.env.STRIPE_PRICE_STUDIO,

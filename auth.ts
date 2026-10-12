@@ -40,11 +40,22 @@ const providers: Provider[] = [
   }),
 ];
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+const googleClientId = process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret =
+  process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+
+if (googleClientId && googleClientSecret) {
   providers.push(
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+      // Google confirma o e-mail. Vincular evita uma segunda conta para quem já entrou com senha.
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          prompt: "select_account",
+        },
+      },
     })
   );
 }
@@ -58,7 +69,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   providers,
+  events: {
+    async createUser({ user }) {
+      if (!user.id) return;
+      await ensureOrganizationForUser({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      });
+    },
+  },
   callbacks: {
+    async signIn({ account, profile }) {
+      if (account?.provider !== "google") return true;
+      const googleProfile = profile as
+        | { email?: string; email_verified?: boolean; emailVerified?: boolean }
+        | undefined;
+      const email = googleProfile?.email ?? "";
+      const verified =
+        googleProfile?.email_verified === true || googleProfile?.emailVerified === true;
+      return email.length > 0 && verified;
+    },
     async jwt({ token, user, trigger, session }) {
       if (user?.id) {
         token.id = user.id;

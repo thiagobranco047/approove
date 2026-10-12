@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { useLocale } from "@/components/locale-provider";
 import { localizedText } from "@/lib/locale";
+import { googleAuthErrorMessage } from "@/lib/google-auth";
 
 export default function SignupPage() {
   const locale = useLocale();
@@ -72,7 +73,26 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    setError("");
+    try {
+      const result = await signIn("google", {
+        callbackUrl: "/dashboard",
+        redirect: false,
+      });
+      if (result?.error) {
+        setError(googleAuthErrorMessage(result.error, tr));
+        setGoogleLoading(false);
+        return;
+      }
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+      setGoogleLoading(false);
+    } catch {
+      setError(tr("Não foi possível entrar com o Google.", "Unable to continue with Google."));
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -88,6 +108,12 @@ export default function SignupPage() {
           {tr("Comece a organizar e aprovar conteúdo com seu time", "Start organizing and approving content with your team")}
         </p>
       </div>
+
+      {error && (
+        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <Button
         variant="outline"
@@ -132,12 +158,6 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-            {error}
-          </div>
-        )}
-
         <div className="space-y-2">
           <Label htmlFor="name">{tr("Seu nome", "Your name")}</Label>
           <Input
