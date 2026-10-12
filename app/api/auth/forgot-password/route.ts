@@ -10,7 +10,7 @@ const forgotPasswordSchema = z.object({
   email: z.string().email("Email inválido"),
 });
 
-// Mensagem genérica sempre — evita revelar se um e-mail está cadastrado.
+// Mensagem genérica sempre - evita revelar se um e-mail está cadastrado.
 const GENERIC_MESSAGE =
   "Se este e-mail estiver cadastrado, enviamos um link para redefinir a senha.";
 

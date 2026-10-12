@@ -48,7 +48,7 @@ export function LandingFeatures({ locale }: { locale: AppLocale }) {
       color: blue,
       textColor: "#fff",
       title: tr("Etapas internas", "Internal production stages"),
-      description: tr("Copy, design, revisão interna e pronto para cliente — fora da vista do cliente.", "Copy, design, internal review, and ready for client — out of the client’s sight."),
+      description: tr("Copy, design, revisão interna e pronto para cliente - fora da vista do cliente.", "Copy, design, internal review, and ready for client - out of the client’s sight."),
     },
     {
       color: amber,

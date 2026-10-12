@@ -34,7 +34,7 @@ export interface ShareAccessContext {
     canPin: boolean;
     canApprove: boolean;
   };
-  /** Token without ClientInvite — treated as approver. Keep until we retire anonymous share links. */
+  /** Token without ClientInvite - treated as approver. Keep until we retire anonymous share links. */
   isLegacy: boolean;
 }
 
@@ -221,7 +221,7 @@ export async function validateShareToken(
     };
   }
 
-  // Legacy token without invite — full client access (approver).
+  // Legacy token without invite - full client access (approver).
   // Kept for existing share links; do not treat as named reviewer.
   return {
     ok: true,

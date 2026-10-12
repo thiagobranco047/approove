@@ -125,7 +125,7 @@ export function LandingPricing({ locale }: { locale: AppLocale }) {
           })}
         </div>
         <p className="mt-10 text-sm font-medium" style={{ color: "rgba(27,25,23,0.55)" }}>
-          {tr("Precisa de mais? O plano Enterprise tem clientes, usuários e revisores ilimitados — ", "Need more? Enterprise includes unlimited clients, users, and reviewers — ")}
+          {tr("Precisa de mais? O plano Enterprise tem clientes, usuários e revisores ilimitados - ", "Need more? Enterprise includes unlimited clients, users, and reviewers - ")}
           <a href="mailto:contato@approove.app" className="font-bold underline underline-offset-4" style={{ color: ink }}>
             {tr("fale com a gente", "talk to us")}
           </a>

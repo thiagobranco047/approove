@@ -10,8 +10,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const isPt = locale === "pt-BR";
 
   const title = isPt
-    ? "Approove — Aprovação de conteúdo para agências"
-    : "Approove — Content approval for agencies";
+    ? "Approove - Aprovação de conteúdo para agências"
+    : "Approove - Content approval for agencies";
   const description = isPt
     ? "Organize o calendário editorial, envie o conteúdo para revisão e saiba exatamente o que o cliente aprovou. Sem aprovação espalhada no WhatsApp, e-mail ou Drive."
     : "Organize the editorial calendar, send content for review, and know exactly what the client approved. Stop chasing approvals across WhatsApp, email, and Drive.";

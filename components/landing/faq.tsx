@@ -36,8 +36,8 @@ export function getLandingFaqs(locale: AppLocale) {
     {
       question: tr("Consigo revisar versões anteriores?", "Can I review previous versions?"),
       answer: tr(
-        "Sim. Versões anteriores continuam consultáveis, com os pins daquela versão. Aprovar só vale para o pacote vigente — a arte e a legenda atuais.",
-        "Yes. Earlier versions remain viewable, with that version’s pins. Approval applies only to the current package — the current creative and caption."
+        "Sim. Versões anteriores continuam consultáveis, com os pins daquela versão. Aprovar só vale para o pacote vigente - a arte e a legenda atuais.",
+        "Yes. Earlier versions remain viewable, with that version’s pins. Approval applies only to the current package - the current creative and caption."
       ),
     },
     {

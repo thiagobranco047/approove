@@ -80,8 +80,8 @@ export function LandingHero({ locale }: { locale: AppLocale }) {
           style={{ "--d": "1350ms", color: "rgba(27,25,23,0.65)" } as React.CSSProperties}
         >
           {tr(
-            "Organize o calendário, envie o conteúdo para revisão e saiba exatamente o que o cliente aprovou — tudo em um único lugar.",
-            "Organize the calendar, send content for review, and know exactly what your client approved — all in one place."
+            "Organize o calendário, envie o conteúdo para revisão e saiba exatamente o que o cliente aprovou - tudo em um único lugar.",
+            "Organize the calendar, send content for review, and know exactly what your client approved - all in one place."
           )}
         </p>
         <div className="fade-up flex flex-wrap items-center gap-3" style={{ "--d": "1500ms" } as React.CSSProperties}>

@@ -177,7 +177,7 @@ async function main() {
   const now = new Date();
   const trial = organizationTrialFields(now);
 
-  console.log("Seeding local orgs A–F + Stripe TEST subscriptions...\n");
+  console.log("Seeding local orgs A-F + Stripe TEST subscriptions...\n");
 
   const a = await upsertUserOrg({
     email: "a.active@approove.test",

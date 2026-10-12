@@ -6,7 +6,7 @@ interface MaskedWordsProps {
 
 /**
  * Divide o texto em palavras mascaradas que sobem em cascata quando o
- * ancestral (Reveal) recebe `is-visible`. Componente de servidor — o
+ * ancestral (Reveal) recebe `is-visible`. Componente de servidor - o
  * movimento é 100% CSS (.mw em globals.css).
  */
 export function MaskedWords({ text, accents = {} }: MaskedWordsProps) {

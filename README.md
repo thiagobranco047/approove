@@ -1,13 +1,13 @@
 # Approove - Plataforma de Aprovação de Conteúdo
 
-Plataforma de aprovação de conteúdo para redes sociais. Organize calendários editoriais, colabore com seu time e aprove publicações com seus clientes — tudo em um só lugar.
+Plataforma de aprovação de conteúdo para redes sociais. Organize calendários editoriais, colabore com seu time e aprove publicações com seus clientes - tudo em um só lugar.
 
 ## Funcionalidades
 
 ### Plataforma (admin)
 
 - **Autenticação**: Login/cadastro com email/senha e Google OAuth (NextAuth v5)
-- **Multi-tenant**: Organizações, memberships e seats — cada empresa gerencia sua carteira de clientes
+- **Multi-tenant**: Organizações, memberships e seats - cada empresa gerencia sua carteira de clientes
 - **Dashboard**: Sidebar, métricas visuais (Recharts) e visão geral dos clientes
 - **Gestão de clientes**: CRUD, tokens de compartilhamento, detalhe com tabs (publicações, calendário, informações)
 - **Gestão de time**: Convite por email, roles (owner/admin/member), remoção de membros
@@ -18,7 +18,7 @@ Plataforma de aprovação de conteúdo para redes sociais. Organize calendários
 
 - **Calendário editorial**: Swiper para navegar entre posts; modal de calendário com navegação livre de meses/anos
 - **Múltiplos posts por dia**: Indicadores no calendário (badges por status) e navegação entre posts do mesmo dia
-- **Materiais flexíveis**: Attachments por tipo (Feed, Stories, LinkedIn, Reels, Carrossel, Outro) — não limitado a feed/stories fixos
+- **Materiais flexíveis**: Attachments por tipo (Feed, Stories, LinkedIn, Reels, Carrossel, Outro) - não limitado a feed/stories fixos
 - **Versionamento de artes**: Múltiplas versões por material, seletor em dropdown no preview
 - **Anotações na arte (pins)**: Marcações posicionadas na imagem com comentário, autor (agência/cliente) e resolução
 - **Toggle de pins**: Ocultar/exibir marcações para visualizar a arte limpa
@@ -27,14 +27,14 @@ Plataforma de aprovação de conteúdo para redes sociais. Organize calendários
 - **Aprovação**: Status (pendente, aprovado, ajustes) e thread de comentários (agência/cliente)
 - **Compartilhamento via link**: Cliente acessa sem conta via token (`?t=TOKEN`)
 - **Revisores convidados (Opção B)**: Contatos nomeados com e-mail, link único, papéis (visualizador / revisor / aprovador) e vínculo a uma ou mais empresas (clientes)
-- **Gestão de revisores**: Tab no detalhe do cliente — convidar, copiar link, revogar acesso, multi-empresa
+- **Gestão de revisores**: Tab no detalhe do cliente - convidar, copiar link, revogar acesso, multi-empresa
 
 ## Tecnologias
 
 - **Next.js 15** (App Router)
 - **TypeScript**
 - **Tailwind CSS** + **shadcn/ui**
-- **NextAuth v5** (Auth.js) — Google OAuth + Credentials
+- **NextAuth v5** (Auth.js) - Google OAuth + Credentials
 - **Prisma** (ORM) + **PostgreSQL**
 - **Recharts** (Gráficos)
 - **Swiper** (Carrossel de posts)
@@ -64,14 +64,14 @@ DATABASE_URL="postgresql://user:password@localhost:5432/approove?schema=public"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="gere-com: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
 
-# Google OAuth (opcional — veja seção abaixo)
+# Google OAuth (opcional - veja seção abaixo)
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
 
-# Vercel Blob (upload de imagens — veja seção abaixo)
+# Vercel Blob (upload de imagens - veja seção abaixo)
 BLOB_READ_WRITE_TOKEN=""
 
-# E-mail (Resend — convites de revisor no piloto)
+# E-mail (Resend - convites de revisor no piloto)
 RESEND_API_KEY=""
 EMAIL_FROM="Approove <convites@seudominio.com>"
 
@@ -119,9 +119,9 @@ Após rodar o seed, os seguintes dados estarão disponíveis:
 | **Cliente demo** | Cliente Demo (`demo-client`) |
 | **Token de acesso** | `demo-token-123` |
 
-**Time demo** (delegação): `copy@approove.com`, `design@approove.com`, `review@approove.com` — senha `member123`
+**Time demo** (delegação): `copy@approove.com`, `design@approove.com`, `review@approove.com` - senha `member123`
 
-> **Gestão interna vs. visão do cliente:** use `/dashboard/clients/demo-client` (menu **Clientes** → clique no card) para publicações, **Revisores** e informações. O link `/c/demo-client/v1?t=...` é só a visão de aprovação — não tem aba de revisores.
+> **Gestão interna vs. visão do cliente:** use `/dashboard/clients/demo-client` (menu **Clientes** → clique no card) para publicações, **Revisores** e informações. O link `/c/demo-client/v1?t=...` é só a visão de aprovação - não tem aba de revisores.
 
 > As imagens do seed usam URLs fixas do [Lorem Picsum](https://picsum.photos) (`/seed/...`) e não mudam a cada refresh.
 
@@ -154,7 +154,7 @@ Necessário para enviar arquivos pela interface (adicionar material / nova vers�
 
 Tipos aceitos: JPEG, PNG, GIF, WebP, SVG, MP4 · máximo 50MB por arquivo.
 
-## Configurar e-mail (Resend) — piloto fechado
+## Configurar e-mail (Resend) - piloto fechado
 
 Necessário para **enviar o link de convite automaticamente** ao cadastrar um revisor (aba Revisores do cliente). Sem as variáveis, o convite é criado normalmente e o link pode ser copiado manualmente.
 
@@ -166,7 +166,7 @@ Necessário para **enviar o link de convite automaticamente** ao cadastrar um re
    EMAIL_FROM="Approove <convites@seudominio.com>"
    NEXTAUTH_URL="https://app.seudominio.com"
    ```
-4. `NEXTAUTH_URL` deve ser a URL pública final — os links nos e-mails usam esse valor
+4. `NEXTAUTH_URL` deve ser a URL pública final - os links nos e-mails usam esse valor
 
 > Em desenvolvimento local, convites sem Resend configurado exibem aviso na interface; use **Copiar link** na lista de revisores.
 
@@ -208,9 +208,9 @@ países sem uma opção de moeda configurada, o Checkout usa o USD padrão. A
 interface segue a mesma regra a partir dos cabeçalhos geográficos da Vercel ou
 Cloudflare, com `Accept-Language` apenas como fallback de desenvolvimento.
 
-## Piloto fechado — deploy e checklist
+## Piloto fechado - deploy e checklist
 
-Use este roteiro para colocar 1–3 agências reais em produção antes do lançamento comercial.
+Use este roteiro para colocar 1-3 agências reais em produção antes do lançamento comercial.
 
 ### Deploy em produção (Vercel + Neon)
 
@@ -222,19 +222,19 @@ Use este roteiro para colocar 1–3 agências reais em produção antes do lanç
 | 4 | Após o primeiro deploy: `npx prisma db push` e `npm run db:seed` (ou migração equivalente no CI) |
 | 5 | Confirme login, upload de arte e convite de revisor com e-mail recebido |
 
-**Neon (free tier):** o banco pode suspender após inatividade — o app exibe mensagem amigável (503). Para piloto, considere plano pago ou acordar horário de “aquecimento” antes das demos.
+**Neon (free tier):** o banco pode suspender após inatividade - o app exibe mensagem amigável (503). Para piloto, considere plano pago ou acordar horário de “aquecimento” antes das demos.
 
 **Vercel Blob:** mesmo projeto Vercel ou store vinculado; token Read-Write obrigatório para upload.
 
-### Happy path (~15 min) — validar antes de convidar clientes
+### Happy path (~15 min) - validar antes de convidar clientes
 
-1. **Login** — criar conta ou usar seed (`admin@approove.com` / `admin123` só em ambiente de teste)
-2. **Cliente** — Dashboard → Clientes → criar cliente ou abrir demo
-3. **Publicação** — Detalhe do cliente → Nova publicação (data, canal, copy)
-4. **Artes** — Botão **Montar calendário e artes** → adicionar material (upload ou URL), pins e status
-5. **Revisor** — Aba Revisores → Convidar → confirmar e-mail recebido (ou copiar link)
-6. **Cliente externo** — Abrir link `?t=...` em aba anônima → comentar / aprovar / solicitar ajuste
-7. **Delegação** (opcional) — Dashboard → Minhas tarefas / Delegar entre copy e design
+1. **Login** - criar conta ou usar seed (`admin@approove.com` / `admin123` só em ambiente de teste)
+2. **Cliente** - Dashboard → Clientes → criar cliente ou abrir demo
+3. **Publicação** - Detalhe do cliente → Nova publicação (data, canal, copy)
+4. **Artes** - Botão **Montar calendário e artes** → adicionar material (upload ou URL), pins e status
+5. **Revisor** - Aba Revisores → Convidar → confirmar e-mail recebido (ou copiar link)
+6. **Cliente externo** - Abrir link `?t=...` em aba anônima → comentar / aprovar / solicitar ajuste
+7. **Delegação** (opcional) - Dashboard → Minhas tarefas / Delegar entre copy e design
 
 ### Suporte no piloto (sem self-service)
 
@@ -359,9 +359,9 @@ approove/
 - Link: `/c/[slug]/[version]?t=TOKEN`
 - **Token legado**: acesso completo de revisão (comentar, anotar, aprovar)
 - **Token com convite (`ClientInvite`)**: acesso limitado por papel e empresas vinculadas
-  - `viewer` — só visualiza
-  - `reviewer` — comenta e cria pins
-  - `approver` — comenta, pins e altera status
+  - `viewer` - só visualiza
+  - `reviewer` - comenta e cria pins
+  - `approver` - comenta, pins e altera status
 - Comentários e pins registram `authorName` e `reviewerId` quando via convite
 - Admin logado também pode interagir na mesma tela
 
@@ -403,7 +403,7 @@ Documento de referência para landing page, billing (Stripe) e limites por organ
 | Plano | Preço/mês | Anual (~17% off) | Clientes | Foco |
 |-------|-----------|------------------|----------|------|
 | 🟢 **Starter** | R$ 197 | R$ 1.970 (~R$ 164/mês) | até 5 | Freelancer / micro agência |
-| 🔵 **Agency** | R$ 497 | R$ 4.970 (~R$ 414/mês) | até 15 | **Plano âncora** — agência em crescimento |
+| 🔵 **Agency** | R$ 497 | R$ 4.970 (~R$ 414/mês) | até 15 | **Plano âncora** - agência em crescimento |
 | 🟣 **Studio** | R$ 997 | R$ 9.970 (~R$ 831/mês) | até 40 | Operação madura, volume e export |
 | ⚫ **Enterprise** | a partir de R$ 2.490 | contrato anual | ilimitado* | White-label, SLA, custom |
 
@@ -428,13 +428,13 @@ Documento de referência para landing page, billing (Stripe) e limites por organ
 | Original HQ após calendário arquivado | Export antes · sem cold storage | Glacier 90 dias | Glacier 1 ano | Custom |
 | Suporte | Comunidade / email | Email | Prioritário (24h úteis) | SLA dedicado |
 
-Storage **ativo** = calendários em aprovação ou até **30 dias** após fechamento (HQ + preview). Após arquivamento, permanece só preview para navegação no app — ver [Arquivamento de mídia](#arquivamento-de-mídia-hq-vs-preview).
+Storage **ativo** = calendários em aprovação ou até **30 dias** após fechamento (HQ + preview). Após arquivamento, permanece só preview para navegação no app - ver [Arquivamento de mídia](#arquivamento-de-mídia-hq-vs-preview).
 
 Storage estimado com **original em alta (HQ) + preview comprimido** para revisores (~20 posts/mês/cliente, 80% imagem / 20% vídeo). Ver [Estimativa de infra](#estimativa-de-infraestrutura-de-mídia).
 
 ### Matriz de funcionalidades × plano
 
-Legenda: ✅ incluído · 🔜 feature futura no plano · — não incluído
+Legenda: ✅ incluído · 🔜 feature futura no plano · - não incluído
 
 | Funcionalidade | Starter | Agency | Studio | Enterprise | Status no produto |
 |----------------|---------|--------|--------|------------|-------------------|
@@ -447,52 +447,52 @@ Legenda: ✅ incluído · 🔜 feature futura no plano · — não incluído
 | Multi-empresa por revisor | ✅ | ✅ | ✅ | ✅ | Concluído |
 | Upload de mídia (Blob / futuro S3) | ✅ | ✅ | ✅ | ✅ | Concluído |
 | Gestão de time (seats) | ✅ | ✅ | ✅ | ✅ | Concluído |
-| Branding leve (logo do cliente no link) | — | ✅ | ✅ | ✅ | Feature futura |
-| Histórico de versões (auditoria por post/arte) | — | ✅ | ✅ | ✅ | Parcial* |
-| E-mail ao convidar revisor | — | ✅ | ✅ | ✅ | Concluído |
-| Notificações por e-mail | — | ✅ | ✅ | ✅ | Feature futura |
-| ClientAssignment (time ↔ clientes) | — | — | ✅ | ✅ | Feature futura |
-| Subdomínio por cliente | — | — | ✅ | ✅ | Feature futura |
-| Exportações (ZIP HQ, PDF calendário, relatório) | — | — | ✅ | ✅ | Feature futura |
-| Preview comprimido / download HQ separado | — | 🔜 | ✅ | ✅ | Feature futura |
+| Branding leve (logo do cliente no link) | - | ✅ | ✅ | ✅ | Feature futura |
+| Histórico de versões (auditoria por post/arte) | - | ✅ | ✅ | ✅ | Parcial* |
+| E-mail ao convidar revisor | - | ✅ | ✅ | ✅ | Concluído |
+| Notificações por e-mail | - | ✅ | ✅ | ✅ | Feature futura |
+| ClientAssignment (time ↔ clientes) | - | - | ✅ | ✅ | Feature futura |
+| Subdomínio por cliente | - | - | ✅ | ✅ | Feature futura |
+| Exportações (ZIP HQ, PDF calendário, relatório) | - | - | ✅ | ✅ | Feature futura |
+| Preview comprimido / download HQ separado | - | 🔜 | ✅ | ✅ | Feature futura |
 | Arquivamento automático (HQ → cold / remove) | ✅ básico | ✅ | ✅ | ✅ | Feature futura |
 | Consulta de calendários antigos (só preview) | ✅ (12 meses) | ✅ | ✅ | ✅ | Feature futura |
-| Restore de original HQ arquivado | — | 🔜 (90 dias) | ✅ (1 ano) | ✅ | Feature futura |
-| Permissões avançadas | — | — | — | ✅ | Feature futura |
-| White-label completo | — | — | — | ✅ | Feature futura |
-| SSO / multi-org | — | — | — | ✅ | Feature futura |
-| Webhooks e integrações | — | — | 🔜 | ✅ | Feature futura |
+| Restore de original HQ arquivado | - | 🔜 (90 dias) | ✅ (1 ano) | ✅ | Feature futura |
+| Permissões avançadas | - | - | - | ✅ | Feature futura |
+| White-label completo | - | - | - | ✅ | Feature futura |
+| SSO / multi-org | - | - | - | ✅ | Feature futura |
+| Webhooks e integrações | - | - | 🔜 | ✅ | Feature futura |
 
 \*Versionamento de artes existe (`AttachmentVersion`). O log de auditoria completo é feature futura.
 
 ### Detalhe por plano
 
-#### 🟢 Starter — R$ 197/mês
+#### 🟢 Starter - R$ 197/mês
 
 - Até **5 clientes**, **2 usuários**, **10 revisores** ativos
 - Calendários ilimitados, comentários, aprovação, link compartilhável
 - Ideal para validar o fluxo com poucos clientes; storage ativo ~5 GB
-- **Arquivamento:** ao fechar calendário, aviso por e-mail para **exportar ZIP HQ** em até 14 dias; depois originais são **removidos** — permanece preview comprimido para consulta por **12 meses**
+- **Arquivamento:** ao fechar calendário, aviso por e-mail para **exportar ZIP HQ** em até 14 dias; depois originais são **removidos** - permanece preview comprimido para consulta por **12 meses**
 
-#### 🔵 Agency — R$ 497/mês *(recomendado)*
+#### 🔵 Agency - R$ 497/mês *(recomendado)*
 
 - Tudo do Starter, até **15 clientes**, **5 usuários**, revisores **ilimitados**
 - **Branding leve** (logo do cliente na visão de aprovação)
 - **Histórico de versões** (auditoria de artes)
 - E-mail de convite (no ar) e notificações por e-mail *(feature futura)*
-- ~**R$ 33/cliente/mês** no teto do plano — posicionamento principal de marketing
+- ~**R$ 33/cliente/mês** no teto do plano - posicionamento principal de marketing
 - **Arquivamento:** originais HQ → **cold storage (Glacier)** por **90 dias** após fechamento; consulta histórica **ilimitada** via preview no app
 
-#### 🟣 Studio — R$ 997/mês
+#### 🟣 Studio - R$ 997/mês
 
 - Tudo do Agency, até **40 clientes**, **15 usuários**
 - **Subdomínio por cliente** (ex.: `marca.approove.com.br`)
 - **Exportações avançadas** (ZIP materiais em HQ, PDF do calendário, relatório de aprovação)
-- **ClientAssignment** — membros do time vinculados a clientes específicos
+- **ClientAssignment** - membros do time vinculados a clientes específicos
 - Suporte prioritário (SLA 24h úteis) · storage ativo ~80 GB
 - **Arquivamento:** originais HQ em Glacier por **1 ano**; **restore sob demanda** (minutos a horas); export em lote antes do arquivamento incluído no fluxo de fechamento
 
-#### ⚫ Enterprise — a partir de R$ 2.490/mês (anual)
+#### ⚫ Enterprise - a partir de R$ 2.490/mês (anual)
 
 - Clientes e usuários ilimitados (ou faixas customizadas)
 - Permissões avançadas, white-label, SLA contratual, onboarding dedicado
@@ -508,7 +508,7 @@ Estratégia para controlar custo de storage sem perder o valor do histórico de 
 | Camada | Conteúdo | Quando | Quem acessa |
 |--------|----------|--------|-------------|
 | **Hot (ativo)** | Original HQ + preview | Calendário em aprovação ou até **30 dias** após fechamento | Revisor: preview · Agência: HQ + download |
-| **Warm (consulta)** | Só preview + metadados (posts, status, comentários, versão) | Após arquivamento do calendário | Todos — navegação no Swiper/histórico |
+| **Warm (consulta)** | Só preview + metadados (posts, status, comentários, versão) | Após arquivamento do calendário | Todos - navegação no Swiper/histórico |
 | **Cold (opcional)** | Original HQ | Após warm, conforme plano | Restore sob demanda (Agency+ / Studio+) |
 
 #### Fluxo ao fechar um calendário
@@ -525,12 +525,12 @@ Calendário marcado como "fechado"
 
 | Plano | Preview (consulta) | HQ após arquivar | Restore HQ |
 |-------|-------------------|------------------|------------|
-| **Starter** | 12 meses | Removido (export manual antes) | — |
+| **Starter** | 12 meses | Removido (export manual antes) | - |
 | **Agency** | Ilimitado | Glacier 90 dias, depois remove | 🔜 |
 | **Studio** | Ilimitado | Glacier 1 ano | ✅ sob demanda |
 | **Enterprise** | Contrato | Contrato | ✅ + SLA |
 
-> **Upsell:** add-on **Storage+** (retenção permanente de HQ na nuvem) para clientes que usam o Approove como biblioteca de assets — fora do fair use padrão.
+> **Upsell:** add-on **Storage+** (retenção permanente de HQ na nuvem) para clientes que usam o Approove como biblioteca de assets - fora do fair use padrão.
 
 #### Implementação alvo (schema / infra)
 
@@ -547,20 +547,20 @@ Referência para margem e fair use (AWS S3 + CloudFront ou Vercel Blob equivalen
 
 | Cenário | Posts | Storage aprox. (HQ + preview) | Custo infra mídia/mês |
 |---------|-------|-------------------------------|------------------------|
-| 3 clientes × 3 meses × 20 posts | 180 | ~2 GB | ~R$ 5–30 |
-| 15 clientes (uso típico Agency) | — | ~6–12 GB | ~R$ 15–50 |
-| 40 clientes (uso típico Studio) | — | ~20–35 GB | ~R$ 40–120 |
+| 3 clientes × 3 meses × 20 posts | 180 | ~2 GB | ~R$ 5-30 |
+| 15 clientes (uso típico Agency) | - | ~6-12 GB | ~R$ 15-50 |
+| 40 clientes (uso típico Studio) | - | ~20-35 GB | ~R$ 40-120 |
 
 Premissas: ~1 criativo/post, 80% imagem (~4 MB HQ + ~350 KB preview), 20% vídeo (~25 MB HQ + ~4 MB preview). Carrosséis e revisões extras aumentam o volume.
 
-Com **arquivamento**, o storage **ativo** (fair use) considera só calendários quentes; previews históricos ocupam fração mínima (~200–500 KB/post) e não competem com HQ em Glacier.
+Com **arquivamento**, o storage **ativo** (fair use) considera só calendários quentes; previews históricos ocupam fração mínima (~200-500 KB/post) e não competem com HQ em Glacier.
 
 ### Billing (implementação)
 
 - [x] Integração **Stripe** (checkout, portal do cliente, webhooks)
 - [x] Enforcement de limites (clientes e usuários da agência) por `Organization`
 - [x] Landing page com pricing e CTA de teste
-- [ ] Jobs de **arquivamento** (HQ → Glacier/remoção) e retenção de preview por plano — feature futura
+- [ ] Jobs de **arquivamento** (HQ → Glacier/remoção) e retenção de preview por plano - feature futura
 
 ---
 
@@ -598,35 +598,35 @@ Com **arquivamento**, o storage **ativo** (fair use) considera só calendários 
 - [x] Papéis de acesso (viewer / reviewer / approver)
 - [x] Identidade do revisor em comentários e pins (`authorName`)
 - [x] **E-mail de convite de revisor** (Resend; fallback manual se não configurado)
-- [x] **UX gestão ↔ calendário** — CTA “Montar calendário e artes” no detalhe do cliente
-- [x] **Checklist de piloto fechado** — deploy, happy path e suporte manual (README)
+- [x] **UX gestão ↔ calendário** - CTA “Montar calendário e artes” no detalhe do cliente
+- [x] **Checklist de piloto fechado** - deploy, happy path e suporte manual (README)
 
 ### Features futuras
 
 Ainda não fazem parte do produto. Na matriz de funcionalidades, a coluna “Status no produto” usa o mesmo rótulo.
 
 **Produto e operação**
-- [ ] **Notificações por e-mail** — aprovação, ajuste solicitado, novo comentário ou pin
-- [ ] **ClientAssignment** — vincular membros do time a clientes específicos
-- [ ] **Configurações da conta** — perfil do usuário e dados da organização além de plano e cobrança
-- [ ] **Branding leve** — logo do cliente no link de aprovação
+- [ ] **Notificações por e-mail** - aprovação, ajuste solicitado, novo comentário ou pin
+- [ ] **ClientAssignment** - vincular membros do time a clientes específicos
+- [ ] **Configurações da conta** - perfil do usuário e dados da organização além de plano e cobrança
+- [ ] **Branding leve** - logo do cliente no link de aprovação
 - [ ] **Subdomínio por cliente**
 - [ ] **Permissões avançadas**, **white-label** e **SSO / multi-org** (Enterprise)
 - [ ] **Webhooks e integrações** com ferramentas externas
 
 **Mídia e entrega**
-- [ ] **Exportações** — ZIP em HQ, PDF do calendário e relatório de aprovação
+- [ ] **Exportações** - ZIP em HQ, PDF do calendário e relatório de aprovação
 - [ ] **Preview comprimido e download HQ** separados
-- [ ] **Arquivamento de mídia** — hot/warm/cold por plano, calendário fechado e e-mail pré-export
+- [ ] **Arquivamento de mídia** - hot/warm/cold por plano, calendário fechado e e-mail pré-export
 - [ ] **Consulta de calendários antigos** só com preview e **restore** do original HQ
-- [ ] **Histórico e auditoria** — log de alterações por post e versão
-- [ ] **Preview de vídeo** — player adequado para MP4 (hoje o vídeo entra em slides de carrossel)
+- [ ] **Histórico e auditoria** - log de alterações por post e versão
+- [ ] **Preview de vídeo** - player adequado para MP4 (hoje o vídeo entra em slides de carrossel)
 
 **Experiência**
-- [ ] **Anotações avançadas** — desenho livre, círculos e rabiscos na arte (hoje só pins com texto)
-- [ ] **Aprovação em lote** — aprovar ou pedir ajuste em vários posts de uma vez
-- [ ] **Tipos de mídia customizáveis** — a organização define as categorias de material
-- [ ] **Integrações com redes sociais** — agendamento e publicação direta
+- [ ] **Anotações avançadas** - desenho livre, círculos e rabiscos na arte (hoje só pins com texto)
+- [ ] **Aprovação em lote** - aprovar ou pedir ajuste em vários posts de uma vez
+- [ ] **Tipos de mídia customizáveis** - a organização define as categorias de material
+- [ ] **Integrações com redes sociais** - agendamento e publicação direta
 - [ ] **Importar do Canva**
 - [ ] **App mobile** ou PWA
 

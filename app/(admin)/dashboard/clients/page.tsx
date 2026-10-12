@@ -52,7 +52,7 @@ export default function ClientsPage() {
     (pt: string, en: string) => localizedText(locale, pt, en),
     [locale]
   );
-  // Palavra digitada pelo usuário para confirmar exclusão — acompanha o idioma.
+  // Palavra digitada pelo usuário para confirmar exclusão - acompanha o idioma.
   const DELETE_CONFIRMATION_WORD = tr("DELETAR", "DELETE");
   const router = useRouter();
   const [clients, setClients] = useState<ClientData[]>([]);

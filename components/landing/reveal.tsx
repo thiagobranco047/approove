@@ -7,7 +7,7 @@ interface RevealProps {
   className?: string;
   delay?: number;
   /**
-   * Quando true, o contêiner não é escondido/transladado — apenas recebe
+   * Quando true, o contêiner não é escondido/transladado - apenas recebe
    * `is-visible` ao entrar no viewport, para efeitos nos filhos (ex.: .mw).
    */
   bare?: boolean;

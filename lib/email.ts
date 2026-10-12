@@ -21,7 +21,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   const from = process.env.EMAIL_FROM?.trim();
 
   if (!apiKey || !from) {
-    console.warn("[email] RESEND_API_KEY ou EMAIL_FROM não configurados — envio ignorado");
+    console.warn("[email] RESEND_API_KEY ou EMAIL_FROM não configurados - envio ignorado");
     return { ok: false, skipped: true };
   }
 

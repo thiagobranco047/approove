@@ -14,7 +14,7 @@ interface ScrollFillProps {
 /**
  * Título cujas palavras "acendem" progressivamente conforme o scroll
  * (efeito de preenchimento por scroll do poetic.com). Sem JS, o texto
- * fica na cor acesa — nunca ilegível.
+ * fica na cor acesa - nunca ilegível.
  */
 export function ScrollFill({
   text,

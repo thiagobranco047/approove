@@ -19,8 +19,8 @@ export function LandingIntegrity({ locale }: { locale: AppLocale }) {
         </Reveal>
         <p className="mt-6 max-w-2xl text-lg font-medium leading-snug" style={{ color: "rgba(27,25,23,0.6)" }}>
           {tr(
-            "O Approove registra quem aprovou, quando aprovou e qual conteúdo estava vigente naquele momento — arte e legenda.",
-            "Approove records who approved, when they approved, and which content was current at that moment — creative and caption."
+            "O Approove registra quem aprovou, quando aprovou e qual conteúdo estava vigente naquele momento - arte e legenda.",
+            "Approove records who approved, when they approved, and which content was current at that moment - creative and caption."
           )}
         </p>
 
@@ -177,8 +177,8 @@ export function LandingFeedback({ locale }: { locale: AppLocale }) {
             </Reveal>
             <p className="mt-6 max-w-xl text-lg font-medium leading-snug" style={{ color: "rgba(27,25,23,0.6)" }}>
               {tr(
-                "Em imagens, o pin vai direto na arte. Na legenda, o comentário fica no conteúdo. Vídeo não recebe pin no quadro — o comentário descreve o ajuste.",
-                "On images, the pin sits on the creative. On captions, comments live with the copy. Video does not get a frame pin — the comment describes the change."
+                "Em imagens, o pin vai direto na arte. Na legenda, o comentário fica no conteúdo. Vídeo não recebe pin no quadro - o comentário descreve o ajuste.",
+                "On images, the pin sits on the creative. On captions, comments live with the copy. Video does not get a frame pin - the comment describes the change."
               )}
             </p>
           </div>

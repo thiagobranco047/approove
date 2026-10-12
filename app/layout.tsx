@@ -20,12 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(getAppBaseUrl()),
     ...(locale === "pt-BR"
       ? {
-          title: "Approove — Aprovação de conteúdo para agências",
+          title: "Approove - Aprovação de conteúdo para agências",
           description:
             "Calendário editorial e fluxo de aprovação com clientes. Organize, revise e registre o que foi aprovado.",
         }
       : {
-          title: "Approove — Content approval for agencies",
+          title: "Approove - Content approval for agencies",
           description:
             "Editorial calendar and client approval workflow. Organize, review, and record what was approved.",
         }),
