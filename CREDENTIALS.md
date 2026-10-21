@@ -19,7 +19,7 @@ Senha: admin123
 
 Use essas contas para testar atribuição de publicações e o fluxo **Delegar** / **Minhas tarefas** no dashboard.
 
-⚠️ **IMPORTANTE:** Estas são credenciais de desenvolvimento. Altere em produção!
+⚠️ **IMPORTANTE:** credenciais só do seed local. `prisma/seed.ts` se recusa a rodar fora de um SQLite local, então elas nunca existem em produção.
 
 ---
 

@@ -369,13 +369,27 @@ approove/
 
 | Comando | Descrição |
 |---------|-----------|
-| `npm run dev` | Servidor de desenvolvimento |
-| `npm run build` | Build de produção |
-| `npm start` | Servidor de produção |
-| `npm run lint` | Executa linter |
-| `npm run db:push` | Sincroniza schema com o banco |
+| `npm run dev` | Servidor de desenvolvimento (sempre no SQLite local, nunca no Turso) |
+| `npm run db:local:reset` | Recria o SQLite local e roda o seed |
+| `npm run build` / `npm start` | Build e servidor de produção |
+| `npm run lint` / `npm run typecheck` / `npm test` | Lint, tipos e testes unitários |
+| `npm run qa:migration` | Prova que schema de `main` + migrações novas = `schema.prisma` |
+| `npm run qa:security` | Sobe o app isolado e reexecuta os ataques da auditoria (`-- --prod` usa `next start`) |
+| `npm run qa:serve` | App isolado e com seed em http://localhost:3015 para QA manual |
+| `npm run qa` | Tudo acima, na ordem do CI |
 | `npm run db:studio` | Abre Prisma Studio |
-| `npm run db:seed` | Popula banco com dados de exemplo |
+
+## Fluxo de desenvolvimento e QA
+
+1. Branch a partir de `main`; `npm run db:local:reset` para um banco local limpo.
+2. Mudou `schema.prisma`? Crie `prisma/migrations/<nome>/migration.sql` só com
+   `ADD COLUMN`/`RENAME COLUMN`/`CREATE` (o runner recusa `DROP TABLE`), mais
+   `fixture.sql` + `expect.tsv` quando houver transformação de dados.
+3. `npm run qa` antes de abrir o PR. O CI (`.github/workflows/ci.yml`) roda o mesmo.
+4. QA manual: `npm run qa:serve` (nenhuma chave do `.env` é usada; e-mails não saem).
+
+O QA nunca lê valores do `.env`: toda chave encontrada nos arquivos `.env*` é anulada
+no servidor de teste, e o banco é um SQLite descartável pelo mesmo adapter libsql da produção.
 
 ## Deploy
 
@@ -383,8 +397,10 @@ approove/
 
 1. Push do código para GitHub
 2. Importe o projeto na Vercel
-3. Configure: `DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BLOB_READ_WRITE_TOKEN`
-4. Deploy automático
+3. Configure: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `AUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BLOB_READ_WRITE_TOKEN`, `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET`, preços `STRIPE_PRICE_*`
+4. Migração no Turso **antes** do deploy do código que depende dela:
+   `npm run db:migrate:turso -- prisma/migrations/<nome>/migration.sql` (mostra o destino e pede `--yes`)
+5. Deploy automático a partir de `main`
 
 ### Outras plataformas
 
