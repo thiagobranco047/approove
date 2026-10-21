@@ -1,13 +1,48 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
+// Mídia dos posts pode vir de qualquer link https colado pela agência, por isso
+// img/media aceitam https:. Scripts só do próprio site e do Google Analytics.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://*.googletagmanager.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
+  "frame-src 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+].join("; ");
+
+const securityHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+];
+
 const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
+  poweredByHeader: false,
+  // next/image não é usado: sem remotePatterns o otimizador não vira proxy aberto.
+  async headers() {
+    return [
+      { source: "/:path*", headers: securityHeaders },
       {
-        protocol: "https",
-        hostname: "**",
+        // Links de aprovação carregam o token na URL: nada de indexar nem vazar via Referer.
+        source: "/c/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
       },
-    ],
+    ];
   },
 };
 

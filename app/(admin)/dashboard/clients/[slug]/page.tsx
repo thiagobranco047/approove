@@ -141,6 +141,7 @@ export default function ClientDetailPage() {
   const initialTab = searchParams.get("tab") ?? "posts";
 
   const [client, setClient] = useState<ClientDetail | null>(null);
+  const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -189,6 +190,7 @@ export default function ClientDetailPage() {
         return;
       }
       setClient(data.client);
+      setCanManage(data.canManage === true);
       setInfoForm({
         name: data.client.name || "",
         cnpj: data.client.cnpj || "",
@@ -227,6 +229,12 @@ export default function ClientDetailPage() {
   };
 
   const handleGenerateToken = async () => {
+    if (
+      shareUrl &&
+      !window.confirm("Gerar um novo link desativa o link atual. Quem tem o link antigo perde o acesso. Continuar?")
+    ) {
+      return;
+    }
     try {
       const res = await fetch(`/api/clients/${slug}/tokens`, { method: "POST" });
       if (res.ok) fetchClient();
@@ -482,15 +490,16 @@ export default function ClientDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {shareUrl ? (
+          {shareUrl && (
             <Button variant="outline" size="sm" onClick={handleCopyLink}>
               {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
               {copied ? "Copiado!" : "Copiar link"}
             </Button>
-          ) : (
+          )}
+          {canManage && (
             <Button variant="outline" size="sm" onClick={handleGenerateToken}>
               <Link2 className="h-4 w-4 mr-2" />
-              Gerar link
+              {shareUrl ? "Novo link" : "Gerar link"}
             </Button>
           )}
 

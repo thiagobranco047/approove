@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { z } from "zod";
+import { requireActiveOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+
+const updateInviteSchema = z.object({
+  status: z.enum(["active", "revoked"]).optional(),
+  role: z.enum(["viewer", "reviewer", "approver"]).optional(),
+});
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ inviteId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { inviteId } = await params;
-    const body = await request.json();
-    const { status, role } = body as { status?: string; role?: string };
+    const { status, role } = updateInviteSchema.parse(await request.json());
 
     const invite = await prisma.clientInvite.findFirst({
       where: {
@@ -27,15 +33,14 @@ export async function PATCH(
       where: { id: inviteId },
       data: {
         ...(status && { status }),
-        ...(role && ["viewer", "reviewer", "approver"].includes(role) && { role }),
+        ...(role && { role }),
       },
     });
 
     return NextResponse.json({ invite: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error updating invite:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

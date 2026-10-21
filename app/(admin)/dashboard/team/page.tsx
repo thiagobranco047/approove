@@ -42,6 +42,7 @@ import { localizedText } from "@/lib/locale";
 interface MemberData {
   id: string;
   role: string;
+  acceptedAt: string | null;
   createdAt: string;
   user: {
     id: string;
@@ -413,6 +414,12 @@ export default function TeamPage() {
                     >
                       <RoleIcon className="h-3 w-3" />
                     </Badge>
+
+                    {!member.acceptedAt && (
+                      <Badge variant="outline" className="text-xs">
+                        {tr("Convite pendente", "Invite pending")}
+                      </Badge>
+                    )}
 
                     <span className="text-xs text-muted-foreground w-28 text-center hidden sm:block">
                       {new Date(member.createdAt).toLocaleDateString(locale, {

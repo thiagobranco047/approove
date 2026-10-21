@@ -1,0 +1,13 @@
+# Repo público: o CI roda gitleaks em todo push/PR. Só valores falsos de teste
+# entram aqui — nunca libere um caminho inteiro.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valores falsos usados em testes"
+regexTarget = "match"
+regexes = [
+  '''sk_test_placeholder''',
+  '''whsec_billing_v2_test''',
+  '''outra-senha-123''',
+]

@@ -1,6 +1,14 @@
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { shouldEndApprooveTrial } from "@/lib/billing-access";
+import {
+  hasProductAccess,
+  isSubscriptionStale,
+  shouldEndApprooveTrial,
+  type BillingFields,
+} from "@/lib/billing-access";
+import { getStripe } from "@/lib/stripe";
+
+const ACCESS_STATUSES = new Set(["trialing", "active", "past_due"]);
 
 function matchesPrice(priceId: string | null | undefined, ...envKeys: string[]) {
   if (!priceId) return false;
@@ -65,17 +73,59 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
       : subscription.customer.id;
   const priceId = subscription.items.data[0]?.price.id;
 
-  await prisma.organization.updateMany({
+  const organization = await prisma.organization.findUnique({
     where: { stripeCustomerId: customerId },
+    select: { id: true, stripeSubscriptionId: true, subscriptionStatus: true },
+  });
+  if (!organization) return;
+
+  // Outra assinatura viva já cobre a org: uma assinatura antiga/duplicada que
+  // cancela ou falha não pode derrubar o acesso.
+  const tracksAnother =
+    organization.stripeSubscriptionId &&
+    organization.stripeSubscriptionId !== subscription.id &&
+    organization.subscriptionStatus &&
+    ACCESS_STATUSES.has(organization.subscriptionStatus);
+  if (tracksAnother && !ACCESS_STATUSES.has(subscription.status)) return;
+
+  await prisma.organization.update({
+    where: { id: organization.id },
     data: {
       stripeSubscriptionId: subscription.id,
       stripePriceId: priceId,
       subscriptionStatus: subscription.status,
-      plan: planFromPrice(priceId),
+      plan: ACCESS_STATUSES.has(subscription.status) ? planFromPrice(priceId) : "free",
       currentPeriodEnd: currentPeriodEnd(subscription),
       ...(shouldEndApprooveTrial(subscription.status)
         ? { trialEndsAt: new Date() }
         : {}),
     },
   });
+}
+
+/** Lê a assinatura atual no Stripe e espelha. Para eventos e assinaturas desatualizadas. */
+export async function refreshSubscription(subscriptionId: string) {
+  await syncSubscription(await getStripe().subscriptions.retrieve(subscriptionId));
+}
+
+/**
+ * Retorna a organização (relida) se ela tem acesso ao produto, senão `null`.
+ * Assinatura com período vencido é confirmada no Stripe antes de bloquear,
+ * para um webhook perdido não trancar quem pagou.
+ */
+export async function ensureProductAccess<T extends BillingFields & { id: string }>(
+  organization: T
+): Promise<T | null> {
+  if (hasProductAccess(organization)) return organization;
+  if (!organization.stripeSubscriptionId || !isSubscriptionStale(organization)) return null;
+
+  try {
+    await refreshSubscription(organization.stripeSubscriptionId);
+  } catch (error) {
+    console.error("Falha ao revalidar assinatura no Stripe:", error);
+    return null;
+  }
+
+  const fresh = await prisma.organization.findUnique({ where: { id: organization.id } });
+  return fresh && hasProductAccess(fresh) ? ({ ...organization, ...fresh } as T) : null;
 }

@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TrialBanner } from "@/components/trial-banner";
 import { requireOrganization } from "@/lib/auth";
+import { redirectForAuthError } from "@/lib/auth-redirect";
 
 export default async function AdminLayout({
   children,
@@ -12,8 +12,8 @@ export default async function AdminLayout({
 }) {
   try {
     await requireOrganization();
-  } catch {
-    redirect("/login");
+  } catch (error) {
+    redirectForAuthError(error);
   }
 
   return (

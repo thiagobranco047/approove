@@ -1,47 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { buildLoginCodeEmail } from "@/lib/email-templates/login-code";
+import { emailSchema } from "@/lib/email-address";
+import { issueLoginCode } from "@/lib/login-code";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
-  email: z.string().email("Email inválido"),
+  email: emailSchema,
 });
 
-function generateCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+// Mesma resposta para e-mail cadastrado ou não: o endpoint não revela contas.
+const GENERIC_RESPONSE = { success: true };
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email } = schema.parse(body);
+    const { email } = schema.parse(await request.json());
+
+    await enforceRateLimit("sendCodeIp", clientIp(request.headers));
+    await enforceRateLimit("sendCodeEmail", email);
 
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Nenhuma conta encontrada com este e-mail" },
-        { status: 404 }
-      );
+      return NextResponse.json(GENERIC_RESPONSE);
     }
 
-    await prisma.verificationToken.deleteMany({
-      where: { identifier: email },
-    });
-
-    const code = generateCode();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    await prisma.verificationToken.create({
-      data: {
-        identifier: email,
-        token: code,
-        expires,
-      },
-    });
+    const code = await issueLoginCode(email);
 
     const emailContent = buildLoginCodeEmail({
       name: user.name || email,
@@ -62,14 +51,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(GENERIC_RESPONSE);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Dados inválidos" },
-        { status: 400 }
-      );
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error sending login code:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { requireActiveOrganization, requireOrganization } from "@/lib/auth";
 import { z } from "zod";
+import { apiErrorResponse } from "@/lib/api-error";
+import { emailSchema } from "@/lib/email-address";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { planAllows, planLimitResponse } from "@/lib/plan-limits";
 import { getEffectivePlan } from "@/lib/billing-access";
 import { sendEmail } from "@/lib/email";
 import { buildMemberInviteEmail } from "@/lib/email-templates/member-invite";
 
 const inviteSchema = z.object({
-  email: z.string().email("Email inválido"),
-  name: z.string().min(1, "Nome é obrigatório").optional(),
+  email: emailSchema,
+  name: z.string().trim().min(1, "Nome é obrigatório").max(120).optional(),
   role: z.enum(["admin", "member"], {
     message: "Função deve ser 'admin' ou 'member'",
   }),
@@ -52,17 +55,22 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { membership, organization } = await requireOrganization();
+    const { membership, organization } = await requireActiveOrganization({
+      roles: ["owner", "admin"],
+    });
 
-    if (membership.role !== "owner" && membership.role !== "admin") {
+    const body = await request.json();
+    const data = inviteSchema.parse(body);
+
+    // Só o proprietário define administradores (convite ou troca de função).
+    if (data.role === "admin" && membership.role !== "owner") {
       return NextResponse.json(
-        { error: "Apenas proprietários e administradores podem convidar membros" },
+        { error: "Apenas o proprietário pode convidar administradores" },
         { status: 403 }
       );
     }
 
-    const body = await request.json();
-    const data = inviteSchema.parse(body);
+    await enforceRateLimit("inviteOrg", organization.id);
 
     const existingMembership = await prisma.membership.findFirst({
       where: {
@@ -78,19 +86,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const plan = getEffectivePlan(organization);
     const memberCount = await prisma.membership.count({
       where: { organizationId: organization.id },
     });
-    if (!planAllows(getEffectivePlan(organization), "members", memberCount)) {
-      return NextResponse.json(
-        planLimitResponse(getEffectivePlan(organization), "members", memberCount),
-        { status: 403 }
-      );
+    if (!planAllows(plan, "members", memberCount)) {
+      return NextResponse.json(planLimitResponse(plan, "members", memberCount), { status: 403 });
     }
 
     let user = await prisma.user.findUnique({
       where: { email: data.email },
     });
+
+    // O Approove trabalha com uma agência por usuário: não puxar quem já tem a sua.
+    if (user) {
+      const elsewhere = await prisma.membership.count({
+        where: { userId: user.id, acceptedAt: { not: null } },
+      });
+      if (elsewhere > 0) {
+        return NextResponse.json(
+          { error: "Este e-mail já participa de outra agência no Approove" },
+          { status: 409 }
+        );
+      }
+    }
 
     if (!user) {
       user = await prisma.user.create({
@@ -103,11 +122,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Convite fica pendente (acceptedAt null) até a pessoa entrar e aceitar.
     const newMembership = await prisma.membership.create({
       data: {
         userId: user.id,
         organizationId: organization.id,
         role: data.role,
+        acceptedAt: null,
       },
       include: {
         user: {
@@ -120,6 +141,15 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Contagem depois de criar: dois convites simultâneos não furam o limite do plano.
+    const countAfter = await prisma.membership.count({
+      where: { organizationId: organization.id },
+    });
+    if (!planAllows(plan, "members", countAfter - 1)) {
+      await prisma.membership.delete({ where: { id: newMembership.id } });
+      return NextResponse.json(planLimitResponse(plan, "members", countAfter - 1), { status: 403 });
+    }
 
     const inviter = await prisma.user.findUnique({
       where: { id: membership.userId },
@@ -147,15 +177,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ member: newMembership });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Dados inválidos" },
-        { status: 400 }
-      );
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error inviting member:", error);
     return NextResponse.json(
       { error: "Internal server error" },

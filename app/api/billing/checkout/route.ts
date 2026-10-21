@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { currencyForLocale } from "@/lib/pricing";
 import { getRequestLocale } from "@/lib/request-locale";
+import { hasLiveSubscription } from "@/lib/billing-access";
+import { apiErrorResponse } from "@/lib/api-error";
 
 function isCurrencyMismatch(error: unknown) {
   return (
@@ -39,6 +41,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { plan, from } = checkoutSchema.parse(await request.json());
+
+    // Mudança de plano de quem já assina vai pelo Portal; um segundo Checkout criaria
+    // duas assinaturas cobrando em paralelo.
+    if (hasLiveSubscription(organization)) {
+      return NextResponse.json(
+        { error: "Sua assinatura já está ativa. Altere o plano em Gerenciar assinatura." },
+        { status: 409 }
+      );
+    }
     const price = priceByPlan[plan];
 
     if (!price) {
@@ -52,18 +63,26 @@ export async function POST(request: NextRequest) {
     let stripeCustomerId = organization.stripeCustomerId;
 
     if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: user.email ?? undefined,
-        name: organization.name,
-        metadata: { app: "approove", organizationId: organization.id },
+      // Chave de idempotência: requisições simultâneas recebem o mesmo customer.
+      const customer = await stripe.customers.create(
+        {
+          email: user.email ?? undefined,
+          name: organization.name,
+          metadata: { app: "approove", organizationId: organization.id },
+        },
+        { idempotencyKey: `approove-customer-${organization.id}` }
+      );
+
+      await prisma.organization.updateMany({
+        where: { id: organization.id, stripeCustomerId: null },
+        data: { stripeCustomerId: customer.id },
       });
 
-      stripeCustomerId = customer.id;
-
-      await prisma.organization.update({
+      const saved = await prisma.organization.findUnique({
         where: { id: organization.id },
-        data: { stripeCustomerId },
+        select: { stripeCustomerId: true },
       });
+      stripeCustomerId = saved?.stripeCustomerId ?? customer.id;
     }
 
     const currency = currencyForLocale(await getRequestLocale());
@@ -101,15 +120,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Dados inválidos" },
-        { status: 400 }
-      );
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating checkout session:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

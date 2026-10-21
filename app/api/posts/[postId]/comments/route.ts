@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { authorizeShareOrSession } from "@/lib/share-access";
 import { isPostVisibleToClient } from "@/lib/client-content-boundary";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
+import { commentTextSchema } from "@/lib/validation";
 
 export async function POST(
   request: NextRequest,
@@ -10,12 +13,10 @@ export async function POST(
 ) {
   try {
     const { postId } = await params;
+    await enforceRateLimit("publicIp", clientIp(request.headers));
     const body = await request.json();
-    const { text, token } = body;
-
-    if (!text?.trim()) {
-      return NextResponse.json({ error: "Texto obrigatório" }, { status: 400 });
-    }
+    const token = typeof body?.token === "string" ? body.token : undefined;
+    const text = commentTextSchema.parse(body?.text);
 
     const post = await prisma.postItem.findUnique({
       where: { id: postId },
@@ -41,6 +42,10 @@ export async function POST(
       return NextResponse.json({ error: "Sem permissão para comentar" }, { status: 403 });
     }
 
+    if (!authResult.isAgency && token) {
+      await enforceRateLimit("publicWriteToken", token);
+    }
+
     const session = await auth();
     const author = authResult.isAgency ? "agency" : "client";
     const authorName = authResult.isAgency
@@ -50,7 +55,7 @@ export async function POST(
     const comment = await prisma.comment.create({
       data: {
         postItemId: postId,
-        text: text.trim(),
+        text,
         author,
         authorName,
         reviewerId: authResult.isAgency ? null : authResult.access?.reviewer?.id ?? null,
@@ -59,6 +64,8 @@ export async function POST(
 
     return NextResponse.json({ comment });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating comment:", error);
     return NextResponse.json(
       { error: "Internal server error" },

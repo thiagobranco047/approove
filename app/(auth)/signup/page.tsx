@@ -192,11 +192,11 @@ export default function SignupPage() {
             id="password"
             name="password"
             type="password"
-            placeholder={tr("Mínimo 6 caracteres", "At least 6 characters")}
+            placeholder={tr("Mínimo 8 caracteres", "At least 8 characters")}
             value={formData.password}
             onChange={handleChange}
             required
-            minLength={6}
+            minLength={8}
             disabled={loading}
           />
         </div>

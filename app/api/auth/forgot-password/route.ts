@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { createPasswordResetToken } from "@/lib/password-reset";
 import { sendEmail } from "@/lib/email";
 import { buildPasswordResetEmail } from "@/lib/email-templates/password-reset";
-import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
+import { apiErrorResponse } from "@/lib/api-error";
+import { emailSchema } from "@/lib/email-address";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: emailSchema,
 });
 
 // Mensagem genérica sempre - evita revelar se um e-mail está cadastrado.
@@ -18,10 +20,14 @@ export async function POST(request: NextRequest) {
   try {
     const { email } = forgotPasswordSchema.parse(await request.json());
 
+    await enforceRateLimit("forgotIp", clientIp(request.headers));
+    await enforceRateLimit("forgotEmail", email);
+
     const user = await prisma.user.findUnique({ where: { email } });
 
-    // Só faz sentido redefinir senha de contas que têm senha (credentials).
-    if (user?.password) {
+    // Também vale para contas sem senha (convite, Google): definir a senha pelo
+    // link do e-mail prova a posse do endereço.
+    if (user) {
       const token = await createPasswordResetToken(user.id);
       const { subject, html, text } = buildPasswordResetEmail({
         name: user.name,
@@ -33,18 +39,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: GENERIC_MESSAGE });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Dados inválidos" },
-        { status: 400 }
-      );
-    }
-
-    if (isDatabaseUnavailable(error)) {
-      const { json, status } = databaseUnavailableResponse();
-      return NextResponse.json(json, { status });
-    }
-
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error requesting password reset:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

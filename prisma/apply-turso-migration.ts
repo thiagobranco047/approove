@@ -8,24 +8,28 @@ const url =
     ? process.env.DATABASE_URL
     : undefined);
 const authToken = process.env.TURSO_AUTH_TOKEN;
+const isRemote = url?.startsWith("libsql://") ?? false;
 
 if (!url) {
   console.error("Defina TURSO_DATABASE_URL no .env");
   process.exit(1);
 }
 
-if (!authToken) {
+if (isRemote && !authToken) {
   console.error(
     "Defina TURSO_AUTH_TOKEN no .env (gere em: turso db tokens create approove-trademarkslab)"
   );
   process.exit(1);
 }
 
+const args = process.argv.slice(2);
+const confirmed = args.includes("--yes");
 const migrationFile =
-  process.argv[2] ?? resolve("prisma/migrations/init/migration.sql");
+  args.find((arg) => !arg.startsWith("--")) ??
+  resolve("prisma/migrations/init/migration.sql");
 
 function parseStatements(raw: string): string[] {
-  const withoutBom = raw.replace(/^\uFEFF/, "");
+  const withoutBom = raw.replace(/^﻿/, "");
   const withoutComments = withoutBom.replace(/--[^\n]*/g, "");
   return withoutComments
     .split(";")
@@ -38,29 +42,30 @@ const client = createClient({ url, authToken });
 async function main() {
   const sql = readFileSync(migrationFile, "utf-8");
   const statements = parseStatements(sql);
+  const target = new URL(url!.replace(/^libsql:/, "https:")).host || url;
 
-  console.log(`Aplicando migração: ${migrationFile}`);
+  console.log(`Migração: ${migrationFile}`);
+  console.log(`Destino:  ${target}`);
   console.log(`${statements.length} statements`);
 
-  await client.execute("PRAGMA foreign_keys = OFF");
-
-  for (let i = 0; i < statements.length; i++) {
-    const statement = statements[i];
-    const preview = statement.replace(/\s+/g, " ").slice(0, 80);
-    try {
-      await client.execute(statement);
-      console.log(`[${i + 1}/${statements.length}] OK: ${preview}...`);
-    } catch (error) {
-      console.error(`[${i + 1}/${statements.length}] FALHOU: ${preview}...`);
-      throw error;
-    }
+  if (statements.some((statement) => /DROP\s+TABLE/i.test(statement))) {
+    // Recriar tabelas no Turso pode disparar ON DELETE CASCADE: PRAGMA foreign_keys
+    // não vale entre requisições HTTP. Escreva migrações só com ADD/RENAME COLUMN.
+    console.error("Migração contém DROP TABLE. Recusado.");
+    process.exit(1);
   }
 
-  await client.execute("PRAGMA foreign_keys = ON");
-  console.log("Migração aplicada com sucesso no Turso.");
+  if (isRemote && !confirmed) {
+    console.error("Banco remoto. Revise o destino acima e rode de novo com --yes.");
+    process.exit(1);
+  }
+
+  // batch "write" roda tudo numa transação: ou aplica tudo, ou nada.
+  await client.batch(statements, "write");
+  console.log("Migração aplicada com sucesso.");
 }
 
 main().catch((error) => {
-  console.error("Erro ao aplicar migração:", error);
+  console.error("Erro ao aplicar migração (nada foi aplicado):", error);
   process.exit(1);
 });

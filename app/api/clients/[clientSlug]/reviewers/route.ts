@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
-import type { ClientInviteRole } from "@/lib/share-access";
+import { z } from "zod";
+import { canManageWorkspace, requireActiveOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { generateShareToken } from "@/lib/crypto-tokens";
+import { emailSchema } from "@/lib/email-address";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { isoDateSchema } from "@/lib/validation";
 import { sendEmail } from "@/lib/email";
 import { buildReviewerInviteEmail } from "@/lib/email-templates/reviewer-invite";
+
+const createReviewerSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório").max(120),
+  email: emailSchema,
+  clientIds: z.array(z.string().min(1).max(64)).min(1, "Selecione ao menos um cliente").max(100),
+  role: z.enum(["viewer", "reviewer", "approver"], { message: "Papel inválido" }).default("approver"),
+  calendarVersionId: z.string().max(64).optional(),
+  expiresAt: isoDateSchema.nullish(),
+});
 
 async function getClientForOrg(slug: string, organizationId: string) {
   return prisma.client.findFirst({
@@ -19,7 +33,8 @@ export async function GET(
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization, membership } = await requireActiveOrganization();
+    const canManage = canManageWorkspace(membership.role);
     const { clientSlug } = await params;
 
     const client = await getClientForOrg(clientSlug, organization.id);
@@ -63,7 +78,8 @@ export async function GET(
         createdAt: invite.createdAt,
         calendarVersion: invite.calendarVersion.version,
         calendarVersionId: invite.calendarVersion.id,
-        token: invite.shareToken.token,
+        // Link pessoal do revisor: só quem gerencia vê, para membros não aprovarem em nome do cliente.
+        token: canManage ? invite.shareToken.token : null,
       })),
     }));
 
@@ -73,17 +89,10 @@ export async function GET(
       orderBy: { name: "asc" },
     });
 
-    return NextResponse.json({ reviewers, orgClients });
+    return NextResponse.json({ reviewers, orgClients, canManage });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof Error && error.message === "No organization") {
-      return NextResponse.json(
-        { error: "Conta sem organização. Complete o onboarding ou use admin@approove.com após o seed." },
-        { status: 403 }
-      );
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error fetching reviewers:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -94,35 +103,12 @@ export async function POST(
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { clientSlug } = await params;
-    const body = await request.json();
-    const {
-      name,
-      email,
-      clientIds,
-      role = "approver",
-      calendarVersionId,
-      expiresAt,
-    } = body as {
-      name: string;
-      email: string;
-      clientIds: string[];
-      role?: ClientInviteRole;
-      calendarVersionId?: string;
-      expiresAt?: string | null;
-    };
+    const { name, email: normalizedEmail, clientIds, role, calendarVersionId, expiresAt } =
+      createReviewerSchema.parse(await request.json());
 
-    if (!name?.trim() || !email?.trim() || !Array.isArray(clientIds) || clientIds.length === 0) {
-      return NextResponse.json(
-        { error: "name, email e clientIds são obrigatórios" },
-        { status: 400 }
-      );
-    }
-
-    if (!["viewer", "reviewer", "approver"].includes(role)) {
-      return NextResponse.json({ error: "Papel inválido" }, { status: 400 });
-    }
+    await enforceRateLimit("inviteOrg", organization.id);
 
     const client = await getClientForOrg(clientSlug, organization.id);
     if (!client) {
@@ -146,8 +132,6 @@ export async function POST(
       return NextResponse.json({ error: "Nenhuma versão de calendário encontrada" }, { status: 404 });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-
     const existingReviewer = await prisma.clientReviewer.findUnique({
       where: {
         organizationId_email: {
@@ -167,11 +151,11 @@ export async function POST(
       },
       create: {
         organizationId: organization.id,
-        name: name.trim(),
+        name,
         email: normalizedEmail,
       },
       update: {
-        name: name.trim(),
+        name,
       },
     });
 
@@ -191,6 +175,8 @@ export async function POST(
     const shareToken = await prisma.shareToken.create({
       data: {
         calendarVersionId: targetVersion.id,
+        token: generateShareToken(),
+        kind: "invite",
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
     });
@@ -237,18 +223,10 @@ export async function POST(
       token: invite.shareToken.token,
       emailSent: emailResult.ok,
       emailSkipped: emailResult.skipped ?? false,
-      emailError: emailResult.error ?? null,
     });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof Error && error.message === "No organization") {
-      return NextResponse.json(
-        { error: "Conta sem organização. Complete o onboarding ou use admin@approove.com após o seed." },
-        { status: 403 }
-      );
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating reviewer:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }

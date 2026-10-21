@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 import { getPostForOrganization } from "@/lib/post-access";
 import {
   attachmentVersionInclude,
   buildSlideCreates,
   normalizeSlides,
-  type SlideInput,
+  slideInputSchema,
 } from "@/lib/attachment-slides";
+
+const createAttachmentSchema = slideInputSchema.extend({
+  type: z.string().min(1).max(40),
+  label: z.string().max(120).optional().nullable(),
+});
 import { actorFromAuth, invalidateApprovalIfNeeded } from "@/lib/approval";
 
 export async function POST(
@@ -15,16 +22,9 @@ export async function POST(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
     const { postId } = await params;
-    const body = await request.json();
-    const { type, label, url, urls, slides } = body as {
-      type: string;
-      label?: string;
-      url?: string;
-      urls?: string[];
-      slides?: SlideInput[];
-    };
+    const { type, label, url, urls, slides } = createAttachmentSchema.parse(await request.json());
 
     const post = await getPostForOrganization(postId, organization.id);
     if (!post) {
@@ -80,9 +80,8 @@ export async function POST(
 
     return NextResponse.json({ attachment });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating attachment:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -96,9 +95,9 @@ export async function DELETE(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
     const { postId } = await params;
-    const { attachmentId } = await request.json();
+    const { attachmentId } = z.object({ attachmentId: z.string().min(1).max(64) }).parse(await request.json());
 
     if (!attachmentId) {
       return NextResponse.json(
@@ -131,9 +130,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error deleting attachment:", error);
     return NextResponse.json(
       { error: "Internal server error" },

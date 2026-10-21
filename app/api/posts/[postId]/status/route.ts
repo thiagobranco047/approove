@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { authorizeShareOrSession } from "@/lib/share-access";
 import { isPostVisibleToClient } from "@/lib/client-content-boundary";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
 import {
   actorFromAuth,
   approvePost,
@@ -17,6 +19,7 @@ export async function PATCH(
 ) {
   try {
     const { postId } = await params;
+    await enforceRateLimit("publicIp", clientIp(request.headers));
     const body = await request.json();
     const { status, token } = body;
 
@@ -91,8 +94,13 @@ export async function PATCH(
       }
     }
 
-    return NextResponse.json({ post: updatedPost });
+    // Revisor externo recebe só id/status: a linha crua tem handoff, responsável e etapa interna.
+    return NextResponse.json({
+      post: authResult.isAgency ? updatedPost : { id: updatedPost.id, status: updatedPost.status },
+    });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error updating post status:", error);
     return NextResponse.json(
       { error: "Internal server error" },

@@ -1,12 +1,21 @@
 import { auth } from "@/auth";
 import { prisma } from "./prisma";
 import { ensureOrganizationForUser } from "@/lib/ensure-organization";
+import { ApiError } from "@/lib/api-error";
+import { ensureProductAccess } from "@/lib/stripe-sync";
+import {
+  WORKSPACE_UNAVAILABLE_CODE,
+  WORKSPACE_UNAVAILABLE_MESSAGE,
+} from "@/lib/workspace-unavailable";
+
+export type OrganizationRole = "owner" | "admin" | "member";
 
 export async function getSession() {
   const session = await auth();
   return session;
 }
 
+/** Sessão válida. O callback `jwt` já invalida tokens de usuário removido ou com sessão revogada. */
 export async function requireAuth() {
   const session = await auth();
 
@@ -17,9 +26,10 @@ export async function requireAuth() {
   return { ...session.user, id: session.user.id };
 }
 
+/** Membership aceita mais antiga. Convites pendentes não dão acesso. */
 export async function getUserOrganization(userId: string) {
   const membership = await prisma.membership.findFirst({
-    where: { userId },
+    where: { userId, acceptedAt: { not: null } },
     include: { organization: true },
     orderBy: { createdAt: "asc" },
   });
@@ -27,21 +37,22 @@ export async function getUserOrganization(userId: string) {
   return membership;
 }
 
+export async function hasPendingInvites(userId: string) {
+  const pending = await prisma.membership.count({
+    where: { userId, acceptedAt: null },
+  });
+  return pending > 0;
+}
+
 export async function requireOrganization() {
   const user = await requireAuth();
-
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { id: true },
-  });
-
-  if (!dbUser) {
-    throw new Error("Unauthorized");
-  }
 
   let membership = await getUserOrganization(user.id);
 
   if (!membership) {
+    if (await hasPendingInvites(user.id)) {
+      throw new ApiError(403, "Você tem um convite pendente", "INVITE_PENDING");
+    }
     membership = await ensureOrganizationForUser({
       id: user.id,
       name: user.name,
@@ -54,4 +65,36 @@ export async function requireOrganization() {
   }
 
   return { user, membership, organization: membership.organization };
+}
+
+export function canManageWorkspace(role: string) {
+  return role === "owner" || role === "admin";
+}
+
+export function requireRole(
+  membership: { role: string },
+  allowed: OrganizationRole[] = ["owner", "admin"]
+) {
+  if (!allowed.includes(membership.role as OrganizationRole)) {
+    throw new ApiError(403, "Apenas proprietários e administradores podem fazer isso", "FORBIDDEN_ROLE");
+  }
+}
+
+/**
+ * Organização com acesso ao produto (trial ou assinatura). Toda rota da agência
+ * que lê ou altera dados de trabalho passa por aqui: o paywall vale na API, não só na UI.
+ */
+export async function requireActiveOrganization(options?: { roles?: OrganizationRole[] }) {
+  const context = await requireOrganization();
+
+  if (options?.roles) {
+    requireRole(context.membership, options.roles);
+  }
+
+  const organization = await ensureProductAccess(context.organization);
+  if (!organization) {
+    throw new ApiError(402, WORKSPACE_UNAVAILABLE_MESSAGE, WORKSPACE_UNAVAILABLE_CODE);
+  }
+
+  return { ...context, organization };
 }

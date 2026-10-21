@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { isoDateSchema } from "@/lib/validation";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 import { isProductionStage } from "@/lib/production-stages";
 import { getPostForOrganization, isOrganizationMember } from "@/lib/post-access";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
 import { actorFromAuth, invalidateApprovalIfNeeded, recordSubmittedForReview } from "@/lib/approval";
 
 const updatePostSchema = z.object({
-  scheduledAt: z.string().optional(),
-  channel: z.string().optional(),
-  title: z.string().optional(),
-  copyText: z.string().optional(),
-  productionStage: z.string().optional(),
-  assigneeId: z.string().nullable().optional(),
+  scheduledAt: isoDateSchema.optional(),
+  channel: z.string().max(40).optional(),
+  title: z.string().max(300).optional(),
+  copyText: z.string().max(10000).optional(),
+  productionStage: z.string().max(40).optional(),
+  assigneeId: z.string().max(64).nullable().optional(),
   handoffNote: z.string().max(2000).optional(),
 });
 
@@ -34,7 +36,7 @@ export async function PATCH(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
     const { postId } = await params;
     const body = await request.json();
     const data = updatePostSchema.parse(body);
@@ -120,12 +122,8 @@ export async function PATCH(
 
     return NextResponse.json({ post: updatedPost });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message ?? "Dados inválidos" }, { status: 400 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error updating post:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -136,7 +134,7 @@ export async function DELETE(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization();
     const { postId } = await params;
 
     const post = await getPostForOrganization(postId, organization.id);
@@ -150,9 +148,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error deleting post:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }

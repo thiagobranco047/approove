@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireOrganization } from "@/lib/auth";
+import { redirectForAuthError } from "@/lib/auth-redirect";
 import { shouldRedirectFromSubscribe, subscribeCopyKind } from "@/lib/billing-access";
 import { getRequestLocale } from "@/lib/request-locale";
 import { SubscribePlans } from "./subscribe-plans";
@@ -9,8 +10,8 @@ export default async function SubscribePage() {
 
   try {
     context = await requireOrganization();
-  } catch {
-    redirect("/login");
+  } catch (error) {
+    redirectForAuthError(error);
   }
 
   const { membership, organization } = context;

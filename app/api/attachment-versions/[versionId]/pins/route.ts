@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeShareOrSession } from "@/lib/share-access";
 import { isPostVisibleToClient } from "@/lib/client-content-boundary";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
+import type { ShareAccessContext } from "@/lib/share-access";
+
+const PIN_TEXT_MAX = 2000;
+
+/** Revisor só mexe nos próprios pins (link da agência: pins de cliente sem revisor). */
+function clientOwnsPin(
+  pin: { author: string; reviewerId: string | null },
+  access: ShareAccessContext | null
+) {
+  return pin.author === "client" && pin.reviewerId === (access?.reviewer?.id ?? null);
+}
 
 async function getPinPostContext(pinId: string) {
   const pin = await prisma.annotationPin.findUnique({
@@ -19,10 +32,11 @@ async function getPinPostContext(pinId: string) {
     },
   });
   const postItem = pin?.attachmentVersion.postAttachment.postItem;
-  if (!postItem) return null;
+  if (!pin || !postItem) return null;
   return {
     calendarVersionId: postItem.calendarVersionId,
     productionStage: postItem.productionStage,
+    pin: { author: pin.author, reviewerId: pin.reviewerId },
   };
 }
 
@@ -32,17 +46,26 @@ export async function POST(
 ) {
   try {
     const { versionId } = await params;
+    await enforceRateLimit("publicIp", clientIp(request.headers));
     const body = await request.json();
     const { xPercent, yPercent, text, token, slideId } = body;
 
     const x = Number(xPercent);
     const y = Number(yPercent);
 
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !text?.trim()) {
+    if (!Number.isFinite(x) || !Number.isFinite(y) || typeof text !== "string" || !text.trim()) {
       return NextResponse.json(
         { error: "xPercent, yPercent e text são obrigatórios" },
         { status: 400 }
       );
+    }
+
+    if (text.length > PIN_TEXT_MAX) {
+      return NextResponse.json({ error: "Anotação muito longa" }, { status: 400 });
+    }
+
+    if (slideId !== undefined && slideId !== null && typeof slideId !== "string") {
+      return NextResponse.json({ error: "slideId inválido" }, { status: 400 });
     }
 
     if (x < 0 || x > 100 || y < 0 || y > 100) {
@@ -79,6 +102,21 @@ export async function POST(
       return NextResponse.json({ error: "Sem permissão para anotar" }, { status: 403 });
     }
 
+    // O slide precisa ser desta versão; senão o pin apareceria no material de outra agência.
+    if (slideId) {
+      const slide = await prisma.attachmentSlide.findFirst({
+        where: { id: slideId, attachmentVersionId: versionId },
+        select: { id: true },
+      });
+      if (!slide) {
+        return NextResponse.json({ error: "Slide não encontrado" }, { status: 404 });
+      }
+    }
+
+    if (!authResult.isAgency && token) {
+      await enforceRateLimit("publicWriteToken", token);
+    }
+
     const resolvedAuthor = authResult.isAgency ? "agency" : "client";
 
     const pin = await prisma.annotationPin.create({
@@ -96,6 +134,8 @@ export async function POST(
 
     return NextResponse.json({ pin });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating annotation pin:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -106,6 +146,7 @@ export async function POST(
 
 export async function PATCH(request: NextRequest) {
   try {
+    await enforceRateLimit("publicIp", clientIp(request.headers));
     const body = await request.json();
     const { pinId, resolved, token } = body;
 
@@ -134,6 +175,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Sem permissão para alterar anotações" }, { status: 403 });
     }
 
+    if (!authResult.isAgency && !clientOwnsPin(pinContext.pin, authResult.access)) {
+      return NextResponse.json({ error: "Você só pode alterar suas anotações" }, { status: 403 });
+    }
+
     const pin = await prisma.annotationPin.update({
       where: { id: pinId },
       data: { resolved },
@@ -141,6 +186,8 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ pin });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error updating pin:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -151,6 +198,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await enforceRateLimit("publicIp", clientIp(request.headers));
     const body = await request.json();
     const { pinId, token } = body;
 
@@ -176,10 +224,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Sem permissão para excluir anotações" }, { status: 403 });
     }
 
+    if (!authResult.isAgency && !clientOwnsPin(pinContext.pin, authResult.access)) {
+      return NextResponse.json({ error: "Você só pode excluir suas anotações" }, { status: 403 });
+    }
+
     await prisma.annotationPin.delete({ where: { id: pinId } });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error deleting pin:", error);
     return NextResponse.json(
       { error: "Internal server error" },

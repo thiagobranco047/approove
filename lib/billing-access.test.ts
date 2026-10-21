@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  SUBSCRIPTION_GRACE_DAYS,
   TRIAL_DAYS,
+  hasLiveSubscription,
+  isSubscriptionStale,
   checkoutAddsStripeTrial,
   getAccessState,
   getEffectivePlan,
@@ -235,5 +238,35 @@ describe("subscribe copy", () => {
 
   it("uses reactivation copy when there is no trial and no subscription", () => {
     expect(subscribeCopyKind(org(), now)).toBe("subscription_inactive");
+  });
+});
+
+describe("stale subscriptions", () => {
+  const day = 24 * 60 * 60 * 1000;
+
+  it("keeps access through the grace window after period end", () => {
+    const organization = org({
+      subscriptionStatus: "active",
+      currentPeriodEnd: new Date(now.getTime() - 2 * day),
+    });
+    expect(isSubscriptionStale(organization, now)).toBe(false);
+    expect(hasProductAccess(organization, now)).toBe(true);
+    expect(hasLiveSubscription(organization, now)).toBe(true);
+  });
+
+  it("drops access once active/past_due outlives the period by more than the grace", () => {
+    for (const subscriptionStatus of ["active", "past_due", "trialing"]) {
+      const organization = org({
+        subscriptionStatus,
+        currentPeriodEnd: new Date(now.getTime() - (SUBSCRIPTION_GRACE_DAYS + 1) * day),
+      });
+      expect(isSubscriptionStale(organization, now)).toBe(true);
+      expect(hasProductAccess(organization, now)).toBe(false);
+      expect(hasLiveSubscription(organization, now)).toBe(false);
+    }
+  });
+
+  it("does not treat missing period end as stale (legacy rows)", () => {
+    expect(isSubscriptionStale(org({ subscriptionStatus: "active" }), now)).toBe(false);
   });
 });

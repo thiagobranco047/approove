@@ -23,7 +23,7 @@ interface ReviewerInvite {
   createdAt: string;
   calendarVersion: string;
   calendarVersionId: string;
-  token: string;
+  token: string | null;
 }
 
 interface Reviewer {
@@ -68,6 +68,7 @@ export function ClientReviewersTab({
     emailError: string | null;
   } | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [canManage, setCanManage] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -87,6 +88,7 @@ export function ClientReviewersTab({
       }
       setReviewers(data.reviewers);
       setOrgClients(data.orgClients);
+      setCanManage(data.canManage === true);
     } catch (error) {
       setLoadError(
         error instanceof Error ? error.message : "Erro ao carregar revisores"
@@ -189,10 +191,6 @@ export function ClientReviewersTab({
       <Card className="mt-4">
         <CardContent className="py-12 text-center space-y-3">
           <p className="text-sm text-destructive">{loadError}</p>
-          <p className="text-xs text-muted-foreground">
-            Verifique se você está logado como admin da agência e se o seed foi executado (
-            <code className="bg-muted px-1 rounded">npm run db:seed</code>).
-          </p>
           <Button size="sm" variant="outline" onClick={() => { setLoading(true); fetchReviewers(); }}>
             Tentar novamente
           </Button>
@@ -210,13 +208,15 @@ export function ClientReviewersTab({
             Pessoas autorizadas a revisar calendários de {clientName} - cada uma com link próprio e empresas vinculadas.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X className="h-4 w-4 mr-1" /> : <UserPlus className="h-4 w-4 mr-1" />}
-          {showForm ? "Cancelar" : "Convidar revisor"}
-        </Button>
+        {canManage && (
+          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X className="h-4 w-4 mr-1" /> : <UserPlus className="h-4 w-4 mr-1" />}
+            {showForm ? "Cancelar" : "Convidar revisor"}
+          </Button>
+        )}
       </div>
 
-      {showForm && (
+      {canManage && showForm && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Novo convite</CardTitle>
@@ -306,7 +306,7 @@ export function ClientReviewersTab({
                 <>
                   <p className="font-medium">Convite criado, mas o e-mail falhou</p>
                   <p className="text-muted-foreground">
-                    {inviteFeedback.emailError ?? "Erro desconhecido"} - copie o link manualmente na lista abaixo.
+                    {inviteFeedback.emailError ?? "Não foi possível enviar o e-mail"} - copie o link manualmente na lista abaixo.
                   </p>
                 </>
               )}
@@ -326,7 +326,7 @@ export function ClientReviewersTab({
       {reviewers.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            Nenhum revisor convidado ainda. Use o botão acima para enviar um link personalizado.
+            Nenhum revisor convidado ainda.{canManage && " Use o botão acima para enviar um link personalizado."}
           </CardContent>
         </Card>
       ) : (
@@ -345,14 +345,16 @@ export function ClientReviewersTab({
                     ))}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
-                  onClick={() => handleDeleteReviewer(reviewer.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canManage && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
+                    onClick={() => handleDeleteReviewer(reviewer.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -374,9 +376,9 @@ export function ClientReviewersTab({
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      {invite.status !== "revoked" && (
+                      {canManage && invite.token && invite.status !== "revoked" && (
                         <>
-                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => copyLink(invite.token)}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => copyLink(invite.token!)}>
                             {copiedToken === invite.token ? (
                               <Check className="h-3 w-3 mr-1" />
                             ) : (
@@ -408,7 +410,7 @@ export function ClientReviewersTab({
           <Link2 className="h-4 w-4 shrink-0 mt-0.5" />
           <p>
             Cada revisor recebe um link único. O acesso é limitado às empresas selecionadas e ao papel definido.
-            Links legados sem convite nomeado continuam funcionando com acesso completo.
+            Remover um revisor desativa os links dele na hora.
           </p>
         </CardContent>
       </Card>

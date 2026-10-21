@@ -117,7 +117,7 @@ function ResetPasswordForm() {
         <h1 className="text-2xl font-bold tracking-tight lg:hidden">Approove</h1>
         <h2 className="text-2xl font-semibold tracking-tight">{tr("Escolha uma nova senha", "Choose a new password")}</h2>
         <p className="text-sm text-muted-foreground">
-          {tr("Sua nova senha deve ter pelo menos 6 caracteres.", "Your new password must be at least 6 characters.")}
+          {tr("Sua nova senha deve ter pelo menos 8 caracteres.", "Your new password must be at least 8 characters.")}
         </p>
       </div>
 
@@ -137,7 +137,7 @@ function ResetPasswordForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={8}
             disabled={loading}
           />
         </div>
@@ -151,7 +151,7 @@ function ResetPasswordForm() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={8}
             disabled={loading}
           />
         </div>

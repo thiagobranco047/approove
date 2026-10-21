@@ -42,3 +42,6 @@ next-env.d.ts
 /prisma/prisma/*.db
 /prisma/prisma/*.db-journal
 /prisma/*.db
+
+# Claude Code (permissões pessoais)
+.claude/settings.local.json

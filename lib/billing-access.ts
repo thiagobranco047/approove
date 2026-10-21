@@ -2,6 +2,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const TRIAL_DAYS = 15;
 
+/** Dias após current_period_end em que `active`/`past_due` ainda valem sem nova confirmação do Stripe. */
+export const SUBSCRIPTION_GRACE_DAYS = 3;
+
 /**
  * Statuses Stripe that keep the product open.
  * `past_due` is a grace window while Smart Retries run.
@@ -49,8 +52,23 @@ export function organizationTrialFields(now = new Date()) {
   };
 }
 
+/**
+ * Status de acesso cujo período já venceu (+ carência). Webhook perdido ou atrasado:
+ * o acesso cai até uma nova leitura do Stripe confirmar a renovação.
+ */
+export function isSubscriptionStale(organization: BillingFields, now = new Date()) {
+  const status = organization.subscriptionStatus;
+  const periodEnd = organization.currentPeriodEnd;
+  if (!status || !STRIPE_ACCESS_STATUSES.has(status) || !periodEnd) return false;
+  return periodEnd.getTime() + SUBSCRIPTION_GRACE_DAYS * DAY_MS < now.getTime();
+}
+
 export function getAccessState(organization: BillingFields, now = new Date()): AccessState {
   const status = organization.subscriptionStatus;
+
+  if (isSubscriptionStale(organization, now)) {
+    return { kind: "subscription_inactive", daysLeft: null };
+  }
 
   if (status && STRIPE_ACCESS_STATUSES.has(status)) {
     const kind = status === "past_due" ? "subscription_grace" : "subscription_active";
@@ -94,6 +112,12 @@ export function subscribeCopyKind(organization: BillingFields, now = new Date())
 
 export function shouldEndApprooveTrial(subscriptionStatus: string | null | undefined) {
   return Boolean(subscriptionStatus && STRIPE_STATUSES_THAT_END_APPROOVE_TRIAL.has(subscriptionStatus));
+}
+
+/** Assinatura que já cobre a organização: não abrir outro Checkout. */
+export function hasLiveSubscription(organization: BillingFields, now = new Date()) {
+  const status = organization.subscriptionStatus;
+  return Boolean(status && STRIPE_ACCESS_STATUSES.has(status) && !isSubscriptionStale(organization, now));
 }
 
 export function hasProductAccess(organization: BillingFields, now = new Date()) {

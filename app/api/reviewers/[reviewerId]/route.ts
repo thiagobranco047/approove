@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
-import type { ClientInviteRole } from "@/lib/share-access";
+import { z } from "zod";
+import { requireActiveOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { emailSchema } from "@/lib/email-address";
+
+const updateReviewerSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  email: emailSchema.optional(),
+  clientIds: z.array(z.string().min(1).max(64)).max(100).optional(),
+});
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ reviewerId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { reviewerId } = await params;
-    const body = await request.json();
-    const { name, email, clientIds } = body as {
-      name?: string;
-      email?: string;
-      clientIds?: string[];
-    };
+    const { name, email, clientIds } = updateReviewerSchema.parse(await request.json());
 
     const reviewer = await prisma.clientReviewer.findFirst({
       where: { id: reviewerId, organizationId: organization.id },
@@ -25,11 +28,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Revisor não encontrado" }, { status: 404 });
     }
 
+    if (email && email !== reviewer.email) {
+      const duplicate = await prisma.clientReviewer.findUnique({
+        where: { organizationId_email: { organizationId: organization.id, email } },
+        select: { id: true },
+      });
+      if (duplicate) {
+        return NextResponse.json({ error: "Já existe um revisor com este e-mail" }, { status: 400 });
+      }
+    }
+
     const updated = await prisma.clientReviewer.update({
       where: { id: reviewerId },
       data: {
-        ...(name?.trim() && { name: name.trim() }),
-        ...(email?.trim() && { email: email.trim().toLowerCase() }),
+        ...(name && { name }),
+        ...(email && { email }),
       },
     });
 
@@ -57,9 +70,8 @@ export async function PATCH(
 
     return NextResponse.json({ reviewer: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error updating reviewer:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -70,7 +82,7 @@ export async function DELETE(
   { params }: { params: Promise<{ reviewerId: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { reviewerId } = await params;
 
     const reviewer = await prisma.clientReviewer.findFirst({
@@ -81,13 +93,17 @@ export async function DELETE(
       return NextResponse.json({ error: "Revisor não encontrado" }, { status: 404 });
     }
 
-    await prisma.clientReviewer.delete({ where: { id: reviewerId } });
+    // Os links do revisor saem junto (ShareToken -> ClientInvite em cascata). Sem isso
+    // o token sobraria sem convite e viraria um link anônimo de aprovação.
+    await prisma.$transaction([
+      prisma.shareToken.deleteMany({ where: { invite: { reviewerId } } }),
+      prisma.clientReviewer.delete({ where: { id: reviewerId } }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error deleting reviewer:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

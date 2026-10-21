@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
-import { requireAuth } from "@/lib/auth";
+import { requireActiveOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { randomToken } from "@/lib/crypto-tokens";
+import { sniffMedia } from "@/lib/file-sniff";
+import { enforceRateLimit } from "@/lib/rate-limit";
+
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth();
+    const { user, organization } = await requireActiveOrganization();
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json(
@@ -13,52 +19,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    await enforceRateLimit("uploadUser", user.id);
 
-    if (!file) {
+    const formData = await request.formData();
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: "Arquivo obrigatório" }, { status: 400 });
     }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "image/svg+xml",
-      "video/mp4",
-      "video/quicktime",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Tipo de arquivo não permitido. Use imagens (JPEG, PNG, GIF, WebP) ou vídeos (MP4)." },
-        { status: 400 }
-      );
-    }
-
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    if (file.size > maxSize) {
+    if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "Arquivo muito grande. Máximo: 50MB." },
         { status: 400 }
       );
     }
 
-    const timestamp = Date.now();
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const pathname = `uploads/${timestamp}-${safeName}`;
+    // O tipo vem dos bytes, não do navegador; nome e extensão são gerados aqui.
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const media = sniffMedia(bytes);
 
-    const blob = await put(pathname, file, {
+    if (!media) {
+      return NextResponse.json(
+        { error: "Tipo de arquivo não permitido. Use imagens (JPEG, PNG, GIF, WebP) ou vídeos (MP4, MOV)." },
+        { status: 400 }
+      );
+    }
+
+    const pathname = `uploads/${organization.id}/${Date.now()}-${randomToken(9)}.${media.ext}`;
+
+    const blob = await put(pathname, Buffer.from(bytes), {
       access: "public",
+      contentType: media.mime,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return NextResponse.json({ url: blob.url });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     if (
       error instanceof Error &&
       error.message.includes("Cannot use public access on a private store")

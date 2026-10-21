@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { isoDateSchema } from "@/lib/validation";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 import { isProductionStage } from "@/lib/production-stages";
 import { isOrganizationMember } from "@/lib/post-access";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
 
 const createPostSchema = z.object({
-  scheduledAt: z.string(),
-  channel: z.string().optional(),
-  title: z.string().optional(),
-  copyText: z.string().optional(),
-  productionStage: z.string().optional(),
-  assigneeId: z.string().nullable().optional(),
+  scheduledAt: isoDateSchema,
+  channel: z.string().max(40).optional(),
+  title: z.string().max(300).optional(),
+  copyText: z.string().max(10000).optional(),
+  productionStage: z.string().max(40).optional(),
+  assigneeId: z.string().max(64).nullable().optional(),
   handoffNote: z.string().max(2000).optional(),
 });
 
@@ -33,7 +35,7 @@ export async function POST(
   { params }: { params: Promise<{ clientSlug: string; versionId: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
     const { clientSlug, versionId } = await params;
     const body = await request.json();
     const data = createPostSchema.parse(body);
@@ -83,12 +85,8 @@ export async function POST(
 
     return NextResponse.json({ post });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message ?? "Dados inválidos" }, { status: 400 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating post:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }

@@ -13,13 +13,14 @@ import { Loader2 } from "lucide-react";
 import { useLocale } from "@/components/locale-provider";
 import { localizedText } from "@/lib/locale";
 import { googleAuthErrorMessage } from "@/lib/google-auth";
+import { safeCallbackUrl } from "@/lib/safe-redirect";
 
 function LoginForm() {
   const locale = useLocale();
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const oauthError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
@@ -41,7 +42,11 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError(tr("Email ou senha incorretos", "Incorrect email or password"));
+        setError(
+          result.code === "rate_limited"
+            ? tr("Muitas tentativas. Aguarde alguns minutos.", "Too many attempts. Wait a few minutes.")
+            : tr("Email ou senha incorretos", "Incorrect email or password")
+        );
         return;
       }
 
