@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "qa-serve",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "qa:serve"
+      ],
+      "port": 3015
+    },
+    {
+      "name": "qa-serve-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "qa:serve",
+        "--",
+        "--prod"
+      ],
+      "port": 3015
+    }
+  ]
+}

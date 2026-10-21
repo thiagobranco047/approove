@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y sqlite3
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Migração (schema base + migrações novas = schema.prisma)
+        run: npm run qa:migration
+        env:
+          QA_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD~1' }}
+      - name: Dependências sem vulnerabilidade crítica em produção
+        run: npm audit --omit=dev --audit-level=critical
+      - run: npm run build
+        env:
+          DATABASE_URL: file:./ci.db
+      - name: QA de segurança ponta a ponta (next start)
+        run: npm run qa:security -- --prod
