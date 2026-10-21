@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "qa:migration": "bash scripts/qa/verify-migration.sh",
+    "qa:migration:prod": "DB=\"$(mktemp -d)/prod-schema.db\" && tsx --env-file=.env scripts/qa/prod-schema-snapshot.ts \"$DB\" && QA_BASE_DB=\"$DB\" bash scripts/qa/verify-migration.sh",
     "qa:security": "tsx scripts/qa/security.ts",
     "qa:serve": "tsx scripts/qa/security.ts --serve",
     "qa:secrets": "command -v gitleaks >/dev/null || { echo 'Instale o gitleaks: brew install gitleaks'; exit 1; }; gitleaks git --no-banner --redact -c .gitleaks.toml .",

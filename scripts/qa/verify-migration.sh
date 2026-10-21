@@ -4,6 +4,7 @@
 # Opcional por migração: fixture.sql (dados no schema antigo) e expect.tsv (descrição<TAB>sql<TAB>esperado).
 #   npm run qa:migration                 # compara com main
 #   QA_BASE_REF=origin/main npm run qa:migration
+#   QA_BASE_DB=prod-schema.db npm run qa:migration -- <migrações...>   # ensaio sobre um snapshot (só DDL)
 set -euo pipefail
 
 BASE_REF="${QA_BASE_REF:-main}"
@@ -27,15 +28,17 @@ if [[ ${#MIGRATIONS[@]} -eq 0 ]]; then
   echo "FALHOU: schema.prisma mudou desde $BASE_REF sem migração em prisma/migrations/."; exit 1
 fi
 
-git show "$BASE_REF:prisma/schema.prisma" > "$WORK/base.prisma"
-DATABASE_URL="file:$DB" npx prisma db push --schema "$WORK/base.prisma" --skip-generate >/dev/null
+if [[ -n "${QA_BASE_DB:-}" ]]; then
+  cp "$QA_BASE_DB" "$DB"
+else
+  git show "$BASE_REF:prisma/schema.prisma" > "$WORK/base.prisma"
+  DATABASE_URL="file:$DB" npx prisma db push --schema "$WORK/base.prisma" --skip-generate >/dev/null
+fi
 
+# Ordem = nome da pasta (prefixo de data). Fixture de cada migração entra logo antes dela.
 for migration in "${MIGRATIONS[@]}"; do
   fixture="$(dirname "$migration")/fixture.sql"
   [[ -f "$fixture" ]] && sqlite3 "$DB" < "$fixture"
-done
-
-for migration in "${MIGRATIONS[@]}"; do
   echo "aplicando $migration"
   TURSO_DATABASE_URL="file:$DB" npx tsx prisma/apply-turso-migration.ts "$migration" >/dev/null
 done

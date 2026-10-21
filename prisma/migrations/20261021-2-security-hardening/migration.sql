@@ -1,7 +1,7 @@
 -- Security hardening (auditoria 2026-10-21).
 -- Só ADD/RENAME COLUMN e índices: nenhuma tabela é recriada, então nenhum
 -- DROP TABLE pode disparar cascatas. Aplicar com:
---   npm run db:migrate:turso -- prisma/migrations/security-hardening/migration.sql
+--   npm run db:migrate:turso -- prisma/migrations/20261021-2-security-hardening/migration.sql --yes
 
 -- Sessões revogáveis e trial por usuário
 ALTER TABLE "User" ADD COLUMN "sessionVersion" INTEGER NOT NULL DEFAULT 0;
