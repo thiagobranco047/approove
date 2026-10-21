@@ -16,6 +16,8 @@ interface HeaderProps {
   showStatus?: boolean;
   reviewerName?: string | null;
   allowPendingReset?: boolean;
+  /** Membro da agência sem permissão de aprovar: vê o status, não "somente visualização". */
+  showReadOnlyStatus?: boolean;
   viewingLatestPackage?: boolean;
   onShowCurrentVersion?: () => void;
 }
@@ -29,6 +31,7 @@ export function Header({
   showStatus = true,
   reviewerName,
   allowPendingReset = false,
+  showReadOnlyStatus = false,
   viewingLatestPackage = true,
   onShowCurrentVersion,
 }: HeaderProps) {
@@ -119,6 +122,17 @@ export function Header({
                   {tr("Ajustes", "Changes")}
                 </Button>
               </div>
+            ) : showReadOnlyStatus ? (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-medium text-white ${getStatusColor(currentStatus)}`}
+                data-status={currentStatus}
+              >
+                {currentStatus === "approved"
+                  ? tr("Aprovado", "Approved")
+                  : currentStatus === "adjustments"
+                    ? tr("Ajustes", "Changes")
+                    : tr("Pendente", "Pending")}
+              </span>
             ) : (
               <span className="text-xs text-muted-foreground px-2">
                 {tr("Somente visualização", "View only")}

@@ -43,6 +43,14 @@ export async function PATCH(
       return NextResponse.json({ error: authResult.error, code: "code" in authResult ? authResult.code : undefined }, { status: authResult.status });
     }
 
+    // Aprovar, pedir ajustes ou reabrir pela agência é decidir pelo cliente: só owner/admin.
+    if (authResult.isAgency && !authResult.canManage) {
+      return NextResponse.json(
+        { error: "Apenas proprietários e administradores podem alterar a aprovação", code: "FORBIDDEN_ROLE" },
+        { status: 403 }
+      );
+    }
+
     if (!authResult.isAgency && !isPostVisibleToClient(post.productionStage)) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }

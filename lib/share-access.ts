@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { getUserOrganization } from "@/lib/auth";
+import { canManageWorkspace, getUserOrganization } from "@/lib/auth";
 import { ensureProductAccess } from "@/lib/stripe-sync";
 import {
   WORKSPACE_UNAVAILABLE_CODE,
@@ -74,7 +74,14 @@ export async function authorizeCalendarView(
   clientSlug: string,
   versionId: string
 ): Promise<
-  | { ok: true; isAgency: boolean; access: ShareAccessContext | null; calendarVersionId: string }
+  | {
+      ok: true;
+      isAgency: boolean;
+      /** Owner/admin da agência. Membros produzem, mas não aprovam em nome do cliente. */
+      canManage: boolean;
+      access: ShareAccessContext | null;
+      calendarVersionId: string;
+    }
   | { ok: false; error: string; status: number; code?: string }
 > {
   const session = await auth();
@@ -96,6 +103,7 @@ export async function authorizeCalendarView(
         return {
           ok: true,
           isAgency: true,
+          canManage: canManageWorkspace(membership.role),
           access: null,
           calendarVersionId: version.id,
         };
@@ -115,6 +123,7 @@ export async function authorizeCalendarView(
   return {
     ok: true,
     isAgency: false,
+    canManage: false,
     access: result.access,
     calendarVersionId: result.access.calendarVersionId,
   };
@@ -256,7 +265,7 @@ export async function authorizeShareOrSession(
   token: string | undefined,
   calendarVersionId: string
 ): Promise<
-  | { ok: true; isAgency: boolean; access: ShareAccessContext | null }
+  | { ok: true; isAgency: boolean; canManage: boolean; access: ShareAccessContext | null }
   | { ok: false; error: string; status: number; code?: string }
 > {
   const session = await auth();
@@ -276,7 +285,12 @@ export async function authorizeShareOrSession(
         if (!(await ensureProductAccess(membership.organization))) {
           return workspaceUnavailable();
         }
-        return { ok: true, isAgency: true, access: null };
+        return {
+          ok: true,
+          isAgency: true,
+          canManage: canManageWorkspace(membership.role),
+          access: null,
+        };
       }
     }
   }
@@ -296,5 +310,5 @@ export async function authorizeShareOrSession(
 
   await touchInviteAccess(result.access.shareTokenId);
 
-  return { ok: true, isAgency: false, access: result.access };
+  return { ok: true, isAgency: false, canManage: false, access: result.access };
 }

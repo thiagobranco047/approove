@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { isoDateSchema } from "@/lib/validation";
 import { apiErrorResponse } from "@/lib/api-error";
-import { requireActiveOrganization } from "@/lib/auth";
+import { canManageWorkspace, requireActiveOrganization } from "@/lib/auth";
 import { isProductionStage } from "@/lib/production-stages";
 import { getPostForOrganization, isOrganizationMember } from "@/lib/post-access";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
@@ -134,12 +134,27 @@ export async function DELETE(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const { organization } = await requireActiveOrganization();
+    const { organization, membership } = await requireActiveOrganization();
     const { postId } = await params;
 
     const post = await getPostForOrganization(postId, organization.id);
     if (!post) {
       return NextResponse.json({ error: "Publicação não encontrada" }, { status: 404 });
+    }
+
+    // Apagar o post apaga o histórico de aprovação junto (cascade). Membro só apaga
+    // o que ainda não foi enviado ao cliente; depois disso, só owner/admin.
+    if (!canManageWorkspace(membership.role)) {
+      const history = await prisma.postStatusEvent.count({ where: { postItemId: postId } });
+      if (history > 0) {
+        return NextResponse.json(
+          {
+            error: "Esta publicação já tem histórico de aprovação. Peça a um administrador para apagá-la.",
+            code: "FORBIDDEN_ROLE",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     await prisma.postItem.delete({

@@ -23,14 +23,19 @@ import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/locale-provider";
 import { localizedText } from "@/lib/locale";
 
-export function AppSidebar() {
+export function AppSidebar({ canManage }: { canManage: boolean }) {
   const locale = useLocale();
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: tr("Clientes", "Clients"), href: "/dashboard/clients", icon: Users },
-    { name: tr("Time", "Team"), href: "/dashboard/team", icon: Building2 },
-    { name: tr("Configurações", "Settings"), href: "/dashboard/settings", icon: Settings },
+    // Equipe e configurações são de owner/admin.
+    ...(canManage
+      ? [
+          { name: tr("Time", "Team"), href: "/dashboard/team", icon: Building2 },
+          { name: tr("Configurações", "Settings"), href: "/dashboard/settings", icon: Settings },
+        ]
+      : []),
   ];
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -96,13 +101,17 @@ export function AppSidebar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                {tr("Configurações", "Settings")}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {canManage && (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    {tr("Configurações", "Settings")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="text-destructive focus:text-destructive"

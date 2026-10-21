@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireOrganization } from "@/lib/auth";
+import { canManageWorkspace, requireOrganization } from "@/lib/auth";
 import { BillingActions } from "./billing-actions";
 import { isTrialing, trialDaysLeft } from "@/lib/billing-access";
 import { localizedText } from "@/lib/locale";
@@ -20,8 +20,11 @@ export default async function SettingsPage() {
       getRequestLocale(),
     ]);
     const tr = (pt: string, en: string) => localizedText(locale, pt, en);
-    const canManageBilling =
-      membership.role === "owner" || membership.role === "admin";
+    const canManageBilling = canManageWorkspace(membership.role);
+    // Configurações da organização são de owner/admin.
+    if (!canManageBilling) {
+      redirect("/dashboard");
+    }
 
     return (
       <div className="space-y-6">

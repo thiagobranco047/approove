@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireActiveOrganization } from "@/lib/auth";
+import { canManageWorkspace, requireActiveOrganization } from "@/lib/auth";
 import { findAgencyShareToken } from "@/lib/share-access";
 import { apiErrorResponse } from "@/lib/api-error";
 import { generateShareToken, randomSlugSuffix } from "@/lib/crypto-tokens";
@@ -12,7 +12,8 @@ const createClientSchema = clientFieldsSchema.extend({ slug: slugSchema });
 
 export async function GET() {
   try {
-    const { organization } = await requireActiveOrganization();
+    const { organization, membership } = await requireActiveOrganization();
+    const canManage = canManageWorkspace(membership.role);
 
     const clients = await prisma.client.findMany({
       where: { organizationId: organization.id },
@@ -34,7 +35,8 @@ export async function GET() {
       clients.map(async (client) => {
         const latestVersion = client.versions[0];
         const posts = latestVersion?.posts || [];
-        const shareToken = latestVersion
+        // Link da agência aprova como cliente: só quem gerencia recebe.
+        const shareToken = canManage && latestVersion
           ? await findAgencyShareToken(latestVersion.id)
           : null;
 
@@ -51,7 +53,7 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json({ clients: clientsWithStats });
+    return NextResponse.json({ clients: clientsWithStats, canManage });
   } catch (error) {
     const handled = apiErrorResponse(error);
     if (handled) return handled;
@@ -65,7 +67,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { organization } = await requireActiveOrganization();
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const data = createClientSchema.parse(await request.json());
 
     const ownSlug = await prisma.client.findFirst({
