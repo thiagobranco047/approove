@@ -4,6 +4,8 @@ import { authorizeCalendarView, rolePermissions, touchInviteAccess } from "@/lib
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
 import { CLIENT_VISIBLE_PRODUCTION_STAGE } from "@/lib/client-content-boundary";
 import { serializeAgencyPost, serializeClientPost } from "@/lib/post-serializer";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
 
 const publicPostInclude = {
   comments: {
@@ -33,6 +35,10 @@ export async function GET(
   try {
     const { clientSlug, versionId } = await params;
     const token = request.nextUrl.searchParams.get("t") ?? undefined;
+
+    if (token) {
+      await enforceRateLimit("publicIp", clientIp(request.headers));
+    }
 
     const authResult = await authorizeCalendarView(token, clientSlug, versionId);
     if (!authResult.ok) {
@@ -79,6 +85,8 @@ export async function GET(
           },
     });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error fetching posts:", error);
     return NextResponse.json(
       { error: "Internal server error" },

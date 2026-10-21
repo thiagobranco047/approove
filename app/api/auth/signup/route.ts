@@ -2,14 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { organizationTrialFields } from "@/lib/billing-access";
 import { slugFromName } from "@/lib/org-slug";
+import { claimTrialFields } from "@/lib/ensure-organization";
+import { emailSchema, passwordSchema } from "@/lib/email-address";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
 
 const signupSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  organizationName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres"),
+  name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(120),
+  email: emailSchema,
+  password: passwordSchema,
+  organizationName: z
+    .string()
+    .trim()
+    .min(2, "Nome da empresa deve ter pelo menos 2 caracteres")
+    .max(80, "Nome da empresa muito longo"),
 });
 
 export async function POST(request: NextRequest) {
@@ -17,13 +24,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = signupSchema.parse(body);
 
+    await enforceRateLimit("signupIp", clientIp(request.headers));
+
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "Este email já está cadastrado" },
+        { error: "Este email já está cadastrado. Entre ou use \"Esqueci minha senha\"." },
         { status: 400 }
       );
     }
@@ -53,7 +62,7 @@ export async function POST(request: NextRequest) {
         data: {
           name: data.organizationName,
           slug: finalSlug,
-          ...organizationTrialFields(),
+          ...(await claimTrialFields(tx, user.id)),
         },
       });
 
@@ -62,6 +71,7 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           organizationId: organization.id,
           role: "owner",
+          acceptedAt: new Date(),
         },
       });
 
@@ -76,13 +86,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Dados inválidos" },
-        { status: 400 }
-      );
-    }
-
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },

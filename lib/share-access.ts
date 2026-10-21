@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { hasProductAccess } from "@/lib/billing-access";
+import { getUserOrganization } from "@/lib/auth";
+import { ensureProductAccess } from "@/lib/stripe-sync";
 import {
   WORKSPACE_UNAVAILABLE_CODE,
   WORKSPACE_UNAVAILABLE_MESSAGE,
@@ -34,7 +35,7 @@ export interface ShareAccessContext {
     canPin: boolean;
     canApprove: boolean;
   };
-  /** Token without ClientInvite - treated as approver. Keep until we retire anonymous share links. */
+  /** Link da agência (kind "agency"), sem revisor nomeado: permissões de aprovador. */
   isLegacy: boolean;
 }
 
@@ -50,36 +51,22 @@ export function rolePermissions(role: ClientInviteRole) {
   }
 }
 
-function isTokenActive(
-  expiresAt: Date | null | undefined,
-  inviteStatus: string | null | undefined
-): boolean {
-  if (inviteStatus === "revoked") return false;
-  if (expiresAt && expiresAt < new Date()) return false;
-  return true;
-}
-
-/** Prefer legacy (non-invite) tokens for agency share links. */
+/** Link da agência mais recente e ativo. Links de revisor nunca entram aqui. */
 export async function findAgencyShareToken(
   calendarVersionId: string
 ): Promise<string | null> {
-  const tokens = await prisma.shareToken.findMany({
-    where: { calendarVersionId },
-    include: { invite: true },
-    orderBy: { createdAt: "asc" },
+  const token = await prisma.shareToken.findFirst({
+    where: {
+      calendarVersionId,
+      kind: "agency",
+      revokedAt: null,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    },
+    orderBy: { createdAt: "desc" },
+    select: { token: true },
   });
 
-  const legacy = tokens.filter((t) => !t.invite);
-  const pool = legacy.length > 0 ? legacy : tokens;
-
-  for (const t of pool) {
-    const expiresAt = t.invite?.expiresAt ?? t.expiresAt;
-    if (isTokenActive(expiresAt, t.invite?.status)) {
-      return t.token;
-    }
-  }
-
-  return null;
+  return token?.token ?? null;
 }
 
 export async function authorizeCalendarView(
@@ -92,11 +79,7 @@ export async function authorizeCalendarView(
 > {
   const session = await auth();
   if (session?.user?.id) {
-    const membership = await prisma.membership.findFirst({
-      where: { userId: session.user.id },
-      include: { organization: true },
-      orderBy: { createdAt: "asc" },
-    });
+    const membership = await getUserOrganization(session.user.id);
 
     if (membership) {
       const version = await prisma.calendarVersion.findFirst({
@@ -107,7 +90,7 @@ export async function authorizeCalendarView(
       });
 
       if (version) {
-        if (!hasProductAccess(membership.organization)) {
+        if (!(await ensureProductAccess(membership.organization))) {
           return workspaceUnavailable();
         }
         return {
@@ -164,7 +147,12 @@ export async function validateShareToken(
     },
   });
 
-  if (!shareToken) {
+  if (!shareToken || shareToken.revokedAt) {
+    return { ok: false, error: "Token inválido", status: 401 };
+  }
+
+  // Link de revisor sem convite (revisor removido) nunca vira link anônimo de aprovador.
+  if (shareToken.kind !== "agency" && !shareToken.invite) {
     return { ok: false, error: "Token inválido", status: 401 };
   }
 
@@ -180,7 +168,7 @@ export async function validateShareToken(
   const { calendarVersion } = shareToken;
   const client = calendarVersion.client;
 
-  if (!hasProductAccess(client.organization)) {
+  if (!(await ensureProductAccess(client.organization))) {
     return workspaceUnavailable();
   }
 
@@ -221,8 +209,7 @@ export async function validateShareToken(
     };
   }
 
-  // Legacy token without invite - full client access (approver).
-  // Kept for existing share links; do not treat as named reviewer.
+  // Link da agência - acesso de aprovador, sem revisor nomeado.
   return {
     ok: true,
     access: {
@@ -274,11 +261,7 @@ export async function authorizeShareOrSession(
 > {
   const session = await auth();
   if (session?.user?.id) {
-    const membership = await prisma.membership.findFirst({
-      where: { userId: session.user.id },
-      include: { organization: true },
-      orderBy: { createdAt: "asc" },
-    });
+    const membership = await getUserOrganization(session.user.id);
 
     if (membership) {
       const ownsCalendar = await prisma.calendarVersion.findFirst({
@@ -290,7 +273,7 @@ export async function authorizeShareOrSession(
       });
 
       if (ownsCalendar) {
-        if (!hasProductAccess(membership.organization)) {
+        if (!(await ensureProductAccess(membership.organization))) {
           return workspaceUnavailable();
         }
         return { ok: true, isAgency: true, access: null };

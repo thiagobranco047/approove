@@ -1,11 +1,24 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { organizationTrialFields } from "@/lib/billing-access";
 import { slugFromName } from "@/lib/org-slug";
 
 /**
- * Ensures the user has exactly one Organization membership.
- * Creates an org + Approove trial only when the user has none.
- * Never restarts trial or duplicates an existing membership.
+ * Trial Approove só para quem nunca teve um. Marca o usuário na mesma transação
+ * em que cria a organização. Recriar conta/organização não renova o trial.
+ */
+export async function claimTrialFields(tx: Prisma.TransactionClient, userId: string) {
+  const claimed = await tx.user.updateMany({
+    where: { id: userId, trialClaimedAt: null },
+    data: { trialClaimedAt: new Date() },
+  });
+  return claimed.count === 1 ? organizationTrialFields() : {};
+}
+
+/**
+ * Ensures the user has exactly one accepted Organization membership.
+ * Creates an org only when the user has none and no invite is pending.
+ * Never restarts a trial or duplicates an existing membership.
  */
 export async function ensureOrganizationForUser(user: {
   id: string;
@@ -13,13 +26,20 @@ export async function ensureOrganizationForUser(user: {
   email?: string | null;
 }) {
   const existing = await prisma.membership.findFirst({
-    where: { userId: user.id },
+    where: { userId: user.id, acceptedAt: { not: null } },
     include: { organization: true },
     orderBy: { createdAt: "asc" },
   });
 
   if (existing) {
     return existing;
+  }
+
+  const pending = await prisma.membership.count({
+    where: { userId: user.id, acceptedAt: null },
+  });
+  if (pending > 0) {
+    return null;
   }
 
   const orgName =
@@ -30,7 +50,7 @@ export async function ensureOrganizationForUser(user: {
 
   return prisma.$transaction(async (tx) => {
     const raced = await tx.membership.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, acceptedAt: { not: null } },
       include: { organization: true },
       orderBy: { createdAt: "asc" },
     });
@@ -46,7 +66,7 @@ export async function ensureOrganizationForUser(user: {
       data: {
         name: orgName,
         slug,
-        ...organizationTrialFields(),
+        ...(await claimTrialFields(tx, user.id)),
       },
     });
 
@@ -55,6 +75,7 @@ export async function ensureOrganizationForUser(user: {
         userId: user.id,
         organizationId: organization.id,
         role: "owner",
+        acceptedAt: new Date(),
       },
       include: { organization: true },
     });

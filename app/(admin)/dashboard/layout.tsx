@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOrganization } from "@/lib/auth";
-import { hasProductAccess } from "@/lib/billing-access";
+import { redirectForAuthError } from "@/lib/auth-redirect";
+import { ensureProductAccess } from "@/lib/stripe-sync";
 
 export default async function DashboardLayout({
   children,
@@ -13,13 +14,13 @@ export default async function DashboardLayout({
   let user;
   try {
     ({ organization, user } = await requireOrganization());
-  } catch {
-    redirect("/login");
+  } catch (error) {
+    redirectForAuthError(error);
   }
   const pathname = (await headers()).get("x-approove-pathname") ?? "";
   const billingEscape = pathname.startsWith("/dashboard/settings");
 
-  if (!hasProductAccess(organization) && !billingEscape) {
+  if (!billingEscape && !(await ensureProductAccess(organization))) {
     redirect("/subscribe");
   }
 

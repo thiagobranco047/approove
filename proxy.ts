@@ -6,7 +6,7 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const authRoutes = ["/login", "/signup", "/forgot-password"];
   const isAuthRoute = authRoutes.includes(pathname);
-  const protectedPrefixes = ["/dashboard", "/onboarding"];
+  const protectedPrefixes = ["/dashboard", "/onboarding", "/convite"];
   const isProtected = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   );

@@ -133,6 +133,13 @@ export async function DELETE(
       );
     }
 
+    if (targetMembership.role === "admin" && membership.role !== "owner") {
+      return NextResponse.json(
+        { error: "Apenas o proprietário pode remover administradores" },
+        { status: 403 }
+      );
+    }
+
     await prisma.membership.delete({
       where: { id: memberId },
     });

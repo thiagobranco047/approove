@@ -33,7 +33,7 @@ export async function getAttachmentForOrganization(
 
 export async function isOrganizationMember(userId: string, organizationId: string) {
   const membership = await prisma.membership.findFirst({
-    where: { userId, organizationId },
+    where: { userId, organizationId, acceptedAt: { not: null } },
     select: { id: true },
   });
   return Boolean(membership);

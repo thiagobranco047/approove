@@ -38,6 +38,23 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Código de login por e-mail. Só o hash fica salvo; tentativas erradas são contadas.
+model LoginCode {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Janela fixa por chave (ex.: "login:ip:1.2.3.4"). Compartilhada entre instâncias via banco.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt BigInt // epoch ms
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -48,7 +65,7 @@ model VerificationToken {
 
 model PasswordResetToken {
   id        String    @id @default(cuid())
-  token     String    @unique
+  tokenHash String    @unique // SHA-256 do token enviado por e-mail
   userId    String
   expiresAt DateTime
   usedAt    DateTime?
@@ -69,6 +86,8 @@ model User {
   image                  String?
   password               String?
   hasCompletedOnboarding Boolean   @default(false)
+  sessionVersion         Int       @default(0) // incrementar invalida todos os JWTs do usuário
+  trialClaimedAt         DateTime? // um trial Approove por usuário
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
@@ -107,6 +126,7 @@ model Membership {
   userId         String
   organizationId String
   role           String   @default("member") // owner, admin, member
+  acceptedAt     DateTime? // null = convite pendente
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -326,9 +346,11 @@ model Comment {
 
 model ShareToken {
   id                String    @id @default(cuid())
-  token             String    @unique @default(cuid())
+  token             String    @unique // gerado por generateShareToken()
+  kind              String    @default("agency") // agency, invite
   calendarVersionId String
   expiresAt         DateTime?
+  revokedAt         DateTime?
   createdAt         DateTime  @default(now())
 
   calendarVersion CalendarVersion @relation(fields: [calendarVersionId], references: [id], onDelete: Cascade)

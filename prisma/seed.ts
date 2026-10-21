@@ -1,6 +1,13 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../lib/prisma";
+import { prisma, resolveDatabaseUrl } from "../lib/prisma";
 import { organizationTrialFields } from "../lib/billing-access";
+
+// Seed cria usuários com senhas públicas (CREDENTIALS.md): só em SQLite local.
+const seedUrl = resolveDatabaseUrl() ?? process.env.DATABASE_URL ?? "";
+if (!seedUrl.startsWith("file:")) {
+  console.error(`Seed recusado: banco não é um SQLite local (${seedUrl.split("?")[0] || "indefinido"}).`);
+  process.exit(1);
+}
 
 async function main() {
   console.log("🌱 Starting seed...");
@@ -48,6 +55,7 @@ async function main() {
       userId: admin.id,
       organizationId: organization.id,
       role: "owner",
+      acceptedAt: new Date(),
     },
   });
 
@@ -80,11 +88,12 @@ async function main() {
           organizationId: organization.id,
         },
       },
-      update: { role: member.role },
+      update: { role: member.role, acceptedAt: new Date() },
       create: {
         userId: user.id,
         organizationId: organization.id,
         role: member.role,
+        acceptedAt: new Date(),
       },
     });
 

@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import {
-  currentPeriodEnd,
-  subscriptionIdFromInvoice,
-  syncSubscription,
-} from "@/lib/stripe-sync";
+import { refreshSubscription, subscriptionIdFromInvoice } from "@/lib/stripe-sync";
+
+function subscriptionIdFromEvent(event: Stripe.Event): string | null {
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object;
+      return typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id ?? null;
+    }
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted":
+      return event.data.object.id;
+    case "invoice.paid":
+    case "invoice.payment_failed":
+      return subscriptionIdFromInvoice(event.data.object);
+    default:
+      return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
     return NextResponse.json(
-      { error: "STRIPE_WEBHOOK_SECRET is not configured" },
+      { error: "Webhook not configured" },
       { status: 500 }
     );
   }
@@ -37,52 +52,15 @@ export async function POST(request: NextRequest) {
       webhookSecret
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Invalid webhook";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("Stripe webhook signature failed:", error);
+    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const subscriptionId =
-      typeof session.subscription === "string"
-        ? session.subscription
-        : session.subscription?.id;
-
-    if (subscriptionId) {
-      await syncSubscription(await stripe.subscriptions.retrieve(subscriptionId));
-    }
-  }
-
-  if (
-    event.type === "customer.subscription.created" ||
-    event.type === "customer.subscription.updated"
-  ) {
-    await syncSubscription(event.data.object as Stripe.Subscription);
-  }
-
-  if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
-    const invoice = event.data.object as Stripe.Invoice;
-    const subscriptionId = subscriptionIdFromInvoice(invoice);
-    if (subscriptionId) {
-      await syncSubscription(await stripe.subscriptions.retrieve(subscriptionId));
-    }
-  }
-
-  if (event.type === "customer.subscription.deleted") {
-    const subscription = event.data.object as Stripe.Subscription;
-    const customerId =
-      typeof subscription.customer === "string"
-        ? subscription.customer
-        : subscription.customer.id;
-
-    await prisma.organization.updateMany({
-      where: { stripeCustomerId: customerId },
-      data: {
-        subscriptionStatus: subscription.status,
-        plan: "free",
-        currentPeriodEnd: currentPeriodEnd(subscription),
-      },
-    });
+  // Sempre relê a assinatura no Stripe: eventos chegam fora de ordem e o payload
+  // pode estar velho. syncSubscription ignora assinaturas duplicadas.
+  const subscriptionId = subscriptionIdFromEvent(event);
+  if (subscriptionId) {
+    await refreshSubscription(subscriptionId);
   }
 
   return NextResponse.json({ received: true });

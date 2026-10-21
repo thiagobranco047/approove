@@ -53,3 +53,10 @@ describe("plan limits v2", () => {
     expect(response.upgradePath).toBe("/dashboard/settings");
   });
 });
+
+describe("free fallback", () => {
+  it("allows nothing new without a trial or subscription", () => {
+    expect(planAllows("free", "clients", 0)).toBe(false);
+    expect(planAllows("free", "members", 1)).toBe(false);
+  });
+});

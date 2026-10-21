@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { requireActiveOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { generateShareToken } from "@/lib/crypto-tokens";
 
+/**
+ * Gera o link da agência da versão atual. Links anteriores da agência são revogados
+ * (rotação): quem tinha o link antigo perde o acesso. Links de revisores não mudam.
+ */
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { clientSlug } = await params;
 
     const client = await prisma.client.findFirst({
@@ -29,17 +35,22 @@ export async function POST(
       );
     }
 
-    const token = await prisma.shareToken.create({
-      data: { calendarVersionId: latestVersion.id },
-    });
+    const [, token] = await prisma.$transaction([
+      prisma.shareToken.updateMany({
+        where: { calendarVersionId: latestVersion.id, kind: "agency", revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+      prisma.shareToken.create({
+        data: { calendarVersionId: latestVersion.id, token: generateShareToken(), kind: "agency" },
+      }),
+    ]);
 
     const shareUrl = `/c/${client.slug}/${latestVersion.version}?t=${token.token}`;
 
     return NextResponse.json({ token: token.token, shareUrl });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating token:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

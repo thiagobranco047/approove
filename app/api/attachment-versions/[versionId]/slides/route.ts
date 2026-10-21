@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { mediaTypeSchema, mediaUrlSchema } from "@/lib/validation";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 import {
   attachmentVersionInclude,
 } from "@/lib/attachment-slides";
@@ -14,8 +16,8 @@ import { inferMediaType } from "@/lib/media-utils";
 import { actorFromAuth, invalidateApprovalIfNeeded } from "@/lib/approval";
 
 const addSlideSchema = z.object({
-  url: z.string().min(1, "URL obrigatória"),
-  mediaType: z.enum(["image", "video"]).optional(),
+  url: mediaUrlSchema,
+  mediaType: mediaTypeSchema,
 });
 
 const reorderSchema = z.object({
@@ -34,7 +36,7 @@ export async function POST(
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    const { organization, user } = await requireOrganization();
+    const { organization, user } = await requireActiveOrganization();
     const { versionId } = await params;
     const body = await request.json();
     const data = addSlideSchema.parse(body);
@@ -66,12 +68,8 @@ export async function POST(
     });
     return NextResponse.json({ version: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message ?? "Dados inválidos" }, { status: 400 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error adding slide:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -82,7 +80,7 @@ export async function PATCH(
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    const { organization, user } = await requireOrganization();
+    const { organization, user } = await requireActiveOrganization();
     const { versionId } = await params;
     const body = await request.json();
     const data = reorderSchema.parse(body);
@@ -122,12 +120,8 @@ export async function PATCH(
     });
     return NextResponse.json({ version: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message ?? "Dados inválidos" }, { status: 400 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error reordering slides:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -138,7 +132,7 @@ export async function DELETE(
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    const { organization, user } = await requireOrganization();
+    const { organization, user } = await requireActiveOrganization();
     const { versionId } = await params;
     const { slideId } = await request.json();
 
@@ -177,9 +171,8 @@ export async function DELETE(
     });
     return NextResponse.json({ version: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error deleting slide:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }

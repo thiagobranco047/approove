@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { canManageWorkspace, requireActiveOrganization } from "@/lib/auth";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
 import { findAgencyShareToken } from "@/lib/share-access";
-import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientFieldsSchema } from "@/lib/validation";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization, membership } = await requireActiveOrganization();
     const { clientSlug } = await params;
 
     const client = await prisma.client.findFirst({
@@ -32,7 +33,6 @@ export async function GET(
               },
               orderBy: { scheduledAt: "asc" },
             },
-            tokens: { orderBy: { createdAt: "desc" }, take: 1 },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -48,33 +48,22 @@ export async function GET(
       ? await findAgencyShareToken(latestVersion.id)
       : null;
 
+    // Só o link da agência da versão atual; tokens de revisores nunca saem aqui.
     const clientWithShareToken = {
       ...client,
-      versions: client.versions.map((version, index) =>
-        index === 0
-          ? {
-              ...version,
-              tokens: agencyShareToken ? [{ token: agencyShareToken }] : [],
-            }
-          : version
-      ),
+      versions: client.versions.map((version, index) => ({
+        ...version,
+        tokens: index === 0 && agencyShareToken ? [{ token: agencyShareToken }] : [],
+      })),
     };
 
-    return NextResponse.json({ client: clientWithShareToken });
+    return NextResponse.json({
+      client: clientWithShareToken,
+      canManage: canManageWorkspace(membership.role),
+    });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof Error && error.message === "No organization") {
-      return NextResponse.json(
-        { error: "Nenhuma organização vinculada à sua conta" },
-        { status: 403 }
-      );
-    }
-    if (isDatabaseUnavailable(error)) {
-      const { json, status } = databaseUnavailableResponse();
-      return NextResponse.json(json, { status });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error fetching client:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -85,7 +74,7 @@ export async function PATCH(
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization();
     const { clientSlug } = await params;
 
     const client = await prisma.client.findFirst({
@@ -96,27 +85,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { name, cnpj, address, website, instagram, facebook, linkedin } = body;
+    const body = (await request.json()) as Record<string, unknown>;
+    const data = clientFieldsSchema.partial().parse(body);
 
+    // Só campos enviados mudam (partial + transform transformaria ausentes em null).
     const updated = await prisma.client.update({
       where: { id: client.id },
-      data: {
-        ...(name && { name }),
-        ...(cnpj !== undefined && { cnpj }),
-        ...(address !== undefined && { address }),
-        ...(website !== undefined && { website }),
-        ...(instagram !== undefined && { instagram }),
-        ...(facebook !== undefined && { facebook }),
-        ...(linkedin !== undefined && { linkedin }),
-      },
+      data: Object.fromEntries(
+        Object.entries(data).filter(([key, value]) => key in body && !(key === "name" && !value))
+      ),
     });
 
     return NextResponse.json({ client: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error updating client:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -127,7 +110,8 @@ export async function DELETE(
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { organization } = await requireOrganization();
+    // Apaga versões, posts e todo o histórico de aprovação: só owner/admin.
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { clientSlug } = await params;
 
     const client = await prisma.client.findFirst({
@@ -142,9 +126,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error deleting client:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

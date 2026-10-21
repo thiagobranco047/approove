@@ -1,0 +1,8 @@
+e-mail normalizado	SELECT email FROM User WHERE id='u1'	owner@agency.test
+colisão de e-mail preservada	SELECT email FROM User WHERE id='u3'	DUP@x.test
+membro existente aceito	SELECT acceptedAt FROM Membership WHERE id='m1'	123
+token de agência	SELECT kind FROM ShareToken WHERE id='t1'	agency
+token de convite	SELECT kind FROM ShareToken WHERE id='t2'	invite
+trial do dono registrado	SELECT trialClaimedAt FROM User WHERE id='u1'	1000
+reset em texto puro descartado	SELECT count(*) FROM PasswordResetToken	0
+dados preservados	SELECT (SELECT count(*) FROM User) || ',' || (SELECT count(*) FROM ClientInvite)	3,1

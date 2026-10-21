@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 import { getAttachmentForOrganization } from "@/lib/post-access";
 import {
   attachmentVersionInclude,
   buildSlideCreates,
   normalizeSlides,
-  type SlideInput,
+  slideInputSchema,
 } from "@/lib/attachment-slides";
 import { actorFromAuth, invalidateApprovalIfNeeded } from "@/lib/approval";
 
@@ -15,14 +16,9 @@ export async function POST(
   { params }: { params: Promise<{ attachmentId: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
     const { attachmentId } = await params;
-    const body = await request.json();
-    const { url, urls, slides } = body as {
-      url?: string;
-      urls?: string[];
-      slides?: SlideInput[];
-    };
+    const { url, urls, slides } = slideInputSchema.parse(await request.json());
 
     const attachment = await getAttachmentForOrganization(attachmentId, organization.id);
     if (!attachment) {
@@ -85,9 +81,8 @@ export async function POST(
 
     return NextResponse.json({ version });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating attachment version:", error);
     return NextResponse.json(
       { error: "Internal server error" },

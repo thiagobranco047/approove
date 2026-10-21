@@ -3,6 +3,10 @@ import Stripe from "stripe";
 const TEST_KEY_IN_PRODUCTION =
   "Stripe: production now refuses test keys. If it’s still on sk_test_, put the live keys in Vercel, or set STRIPE_ALLOW_TEST_MODE=true if you’re still testing.";
 
+/**
+ * Produção da Vercel nunca roda com chave de teste: qualquer um pagaria com o
+ * cartão 4242 e ganharia um plano. Só sk_live_/rk_live_ passam (rk_test_ também é teste).
+ */
 export function assertStripeSecretKey(
   key: string | undefined,
   env: {
@@ -16,8 +20,9 @@ export function assertStripeSecretKey(
 
   const isVercelProduction = env.vercelEnv === "production";
   const allowTestMode = env.allowTestMode === "true";
+  const isLiveKey = key.startsWith("sk_live_") || key.startsWith("rk_live_");
 
-  if (isVercelProduction && key.startsWith("sk_test_") && !allowTestMode) {
+  if (isVercelProduction && !isLiveKey && !allowTestMode) {
     throw new Error(TEST_KEY_IN_PRODUCTION);
   }
 

@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { requireActiveOrganization } from "@/lib/auth";
 import { findAgencyShareToken } from "@/lib/share-access";
-import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
+import { apiErrorResponse } from "@/lib/api-error";
+import { generateShareToken, randomSlugSuffix } from "@/lib/crypto-tokens";
+import { clientFieldsSchema, slugSchema } from "@/lib/validation";
 import { planAllows, planLimitResponse } from "@/lib/plan-limits";
 import { getEffectivePlan } from "@/lib/billing-access";
 
+const createClientSchema = clientFieldsSchema.extend({ slug: slugSchema });
+
 export async function GET() {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization();
 
     const clients = await prisma.client.findMany({
       where: { organizationId: organization.id },
@@ -17,10 +21,6 @@ export async function GET() {
           include: {
             posts: {
               select: { status: true },
-            },
-            tokens: {
-              take: 1,
-              orderBy: { createdAt: "desc" },
             },
           },
           orderBy: { createdAt: "desc" },
@@ -53,16 +53,8 @@ export async function GET() {
 
     return NextResponse.json({ clients: clientsWithStats });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof Error && error.message === "No organization") {
-      return NextResponse.json({ clients: [] });
-    }
-    if (isDatabaseUnavailable(error)) {
-      const { json, status } = databaseUnavailableResponse();
-      return NextResponse.json(json, { status });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error fetching clients:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
@@ -73,72 +65,66 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { organization } = await requireOrganization();
+    const { organization } = await requireActiveOrganization();
+    const data = createClientSchema.parse(await request.json());
 
-    const body = await request.json();
-    const { name, slug, cnpj, address, website, instagram, facebook, linkedin } =
-      body;
-
-    if (!name || !slug) {
-      return NextResponse.json(
-        { error: "Nome e slug são obrigatórios" },
-        { status: 400 }
-      );
-    }
-
-    const existing = await prisma.client.findUnique({
-      where: { slug },
+    const ownSlug = await prisma.client.findFirst({
+      where: { slug: data.slug, organizationId: organization.id },
+      select: { id: true },
     });
-
-    if (existing) {
-      return NextResponse.json(
-        { error: "Slug já existe" },
-        { status: 400 }
-      );
+    if (ownSlug) {
+      return NextResponse.json({ error: "Você já tem um cliente com este slug" }, { status: 400 });
     }
 
+    // Slugs são globais (URL pública). Se outra agência já usa, um sufixo aleatório
+    // evita conflito sem revelar que o slug existe.
+    const takenElsewhere = await prisma.client.findUnique({
+      where: { slug: data.slug },
+      select: { id: true },
+    });
+    const slug = takenElsewhere ? `${data.slug}-${randomSlugSuffix()}` : data.slug;
+
+    const plan = getEffectivePlan(organization);
     const clientCount = await prisma.client.count({
       where: { organizationId: organization.id },
     });
-    if (!planAllows(getEffectivePlan(organization), "clients", clientCount)) {
-      return NextResponse.json(
-        planLimitResponse(getEffectivePlan(organization), "clients", clientCount),
-        { status: 403 }
-      );
+    if (!planAllows(plan, "clients", clientCount)) {
+      return NextResponse.json(planLimitResponse(plan, "clients", clientCount), { status: 403 });
     }
 
     const client = await prisma.client.create({
       data: {
         organizationId: organization.id,
-        name,
+        name: data.name,
         slug,
-        cnpj,
-        address,
-        website,
-        instagram,
-        facebook,
-        linkedin,
+        cnpj: data.cnpj,
+        address: data.address,
+        website: data.website,
+        instagram: data.instagram,
+        facebook: data.facebook,
+        linkedin: data.linkedin,
+        versions: {
+          create: {
+            version: "v1",
+            tokens: { create: { token: generateShareToken(), kind: "agency" } },
+          },
+        },
       },
     });
 
-    const version = await prisma.calendarVersion.create({
-      data: {
-        clientId: client.id,
-        version: "v1",
-      },
+    // Contagem depois de criar: requisições simultâneas não furam o limite do plano.
+    const countAfter = await prisma.client.count({
+      where: { organizationId: organization.id },
     });
-
-    await prisma.shareToken.create({
-      data: {
-        calendarVersionId: version.id,
-      },
-    });
+    if (!planAllows(plan, "clients", countAfter - 1)) {
+      await prisma.client.delete({ where: { id: client.id } });
+      return NextResponse.json(planLimitResponse(plan, "clients", countAfter - 1), { status: 403 });
+    }
 
     return NextResponse.json({ client });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error creating client:", error);
     return NextResponse.json(
       { error: "Internal server error" },

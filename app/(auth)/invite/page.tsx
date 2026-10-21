@@ -3,6 +3,8 @@
 import { Suspense } from "react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { safeCallbackUrl } from "@/lib/safe-redirect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +14,7 @@ function InviteForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") || "";
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
 
   const [email] = useState(emailParam);
   const [step, setStep] = useState<"send" | "verify">("send");
@@ -97,16 +99,18 @@ function InviteForm() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: fullCode }),
+      const result = await signIn("email-code", {
+        email,
+        code: fullCode,
+        redirect: false,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Código inválido");
+      if (result?.error) {
+        setError(
+          result.code === "rate_limited"
+            ? "Muitas tentativas. Aguarde alguns minutos."
+            : "Código inválido ou expirado"
+        );
         setCode(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
         return;

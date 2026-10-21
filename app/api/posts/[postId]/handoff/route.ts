@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 import { isProductionStage } from "@/lib/production-stages";
 import { getPostForOrganization, isOrganizationMember } from "@/lib/post-access";
 import { attachmentVersionInclude } from "@/lib/attachment-slides";
@@ -31,7 +32,7 @@ export async function PATCH(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
     const { postId } = await params;
     const body = await request.json();
     const data = handoffSchema.parse(body);
@@ -78,12 +79,8 @@ export async function PATCH(
 
     return NextResponse.json({ post: updatedPost });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message ?? "Dados inválidos" }, { status: 400 });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     if (isDatabaseUnavailable(error)) {
       const { json, status } = databaseUnavailableResponse();
       return NextResponse.json(json, { status });

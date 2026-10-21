@@ -21,6 +21,12 @@ describe("assertStripeSecretKey", () => {
     ).toBe("sk_test_example");
   });
 
+  it("rejects restricted test keys on Vercel production", () => {
+    expect(() =>
+      assertStripeSecretKey("rk_test_example", { vercelEnv: "production" })
+    ).toThrow(/production now refuses test keys/);
+  });
+
   it("allows live keys on Vercel production", () => {
     expect(
       assertStripeSecretKey("sk_live_example", { vercelEnv: "production" })

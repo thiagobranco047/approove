@@ -1,4 +1,6 @@
+import { z } from "zod";
 import type { AnnotationPin } from "@/lib/types";
+import { mediaTypeSchema, mediaUrlSchema } from "@/lib/validation";
 import { inferMediaType, type MediaType } from "@/lib/media-utils";
 
 export interface SlideInput {
@@ -32,6 +34,13 @@ export interface ResolvedSlide {
   label?: string | null;
   pins: AnnotationPin[];
 }
+
+/** Corpo aceito para criar material/versão: só links https, no máximo 30 slides. */
+export const slideInputSchema = z.object({
+  url: mediaUrlSchema.optional(),
+  urls: z.array(mediaUrlSchema).max(30).optional(),
+  slides: z.array(z.object({ url: mediaUrlSchema, mediaType: mediaTypeSchema })).max(30).optional(),
+});
 
 export function normalizeSlideUrls(url?: string, urls?: string[]): string[] {
   if (urls && urls.length > 0) {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateShareToken, touchInviteAccess } from "@/lib/share-access";
+import { apiErrorResponse } from "@/lib/api-error";
+import { clientIp, enforceRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +12,8 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
     }
+
+    await enforceRateLimit("publicIp", clientIp(request.headers));
 
     const result = await validateShareToken(token, { clientSlug, versionId });
     if (!result.ok) {
@@ -30,6 +34,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error validating share token:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

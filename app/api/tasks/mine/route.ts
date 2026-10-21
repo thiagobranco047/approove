@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireOrganization } from "@/lib/auth";
-import { databaseUnavailableResponse, isDatabaseUnavailable } from "@/lib/api-error";
+import { apiErrorResponse } from "@/lib/api-error";
+import { requireActiveOrganization } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const { user, organization } = await requireOrganization();
+    const { user, organization } = await requireActiveOrganization();
 
     const tasks = await prisma.postItem.findMany({
       where: {
@@ -26,16 +26,8 @@ export async function GET() {
 
     return NextResponse.json({ tasks });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Faça login para continuar" }, { status: 401 });
-    }
-    if (error instanceof Error && error.message === "No organization") {
-      return NextResponse.json({ tasks: [] });
-    }
-    if (isDatabaseUnavailable(error)) {
-      const { json, status } = databaseUnavailableResponse();
-      return NextResponse.json(json, { status });
-    }
+    const handled = apiErrorResponse(error);
+    if (handled) return handled;
     console.error("Error fetching tasks:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
