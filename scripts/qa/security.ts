@@ -484,6 +484,61 @@ async function suite(db: Client) {
     const detail = await http(member, "GET", "/api/clients/demo-client");
     expectEqual(detail.json.canManage, false);
   });
+  await check("membro não recebe o link da agência (aprova como cliente)", async () => {
+    const detail = await http(member, "GET", "/api/clients/demo-client");
+    const versions = (detail.json.client as { versions: { tokens: unknown[] }[] }).versions;
+    expectTrue(versions.every((v) => v.tokens.length === 0), "link da agência exposto no detalhe");
+    const list = await http(member, "GET", "/api/clients");
+    expectEqual(list.json.canManage, false);
+    expectTrue(
+      (list.json.clients as { latestToken?: string }[]).every((c) => c.latestToken === undefined),
+      "link da agência exposto na lista"
+    );
+    const adminList = await http(admin, "GET", "/api/clients");
+    expectTrue((adminList.json.clients as { latestToken?: string }[]).some((c) => c.latestToken), "admin sem link");
+  });
+  await check("membro não cria nem edita cliente", async () => {
+    expectEqual((await http(member, "POST", "/api/clients", { name: "Membro", slug: "membro-cria" })).status, 403, "criar");
+    expectEqual((await http(member, "PATCH", "/api/clients/demo-client", { name: "pwn" })).status, 403, "editar");
+    const row = await one(db, `SELECT name FROM Client WHERE slug = 'demo-client'`);
+    expectTrue(row!.name !== "pwn", "nome alterado");
+  });
+  await check("membro não aprova nem reabre em nome do cliente", async () => {
+    for (const status of ["approved", "adjustments", "pending"]) {
+      expectEqual((await http(member, "PATCH", `/api/posts/${demoPost}/status`, { status })).status, 403, status);
+    }
+    const calendar = await http(member, "GET", "/api/calendar/demo-client/v1/posts");
+    const permissions = (calendar.json.access as { permissions: { canApprove: boolean; canComment: boolean } }).permissions;
+    expectEqual(permissions.canApprove, false, "canApprove");
+    expectEqual(permissions.canComment, true, "canComment");
+  });
+  await check("membro produz posts, mas não apaga post com histórico de aprovação", async () => {
+    const created = await http(member, "POST", "/api/calendar/demo-client/v1/posts/create", {
+      scheduledAt: new Date().toISOString(),
+      title: "rascunho do membro",
+    });
+    expectEqual(created.status, 200, "criar post");
+    const draftId = String((created.json.post as { id: string }).id);
+    expectEqual((await http(member, "PATCH", `/api/posts/${draftId}`, { title: "editado" })).status, 200, "editar post");
+    expectEqual((await http(member, "POST", `/api/posts/${draftId}/comments`, { text: "nota interna" })).status, 200, "comentar");
+    expectEqual((await http(member, "DELETE", `/api/posts/${draftId}`)).status, 200, "apagar rascunho");
+    // demoPost foi aprovado pelo revisor em #2: tem histórico.
+    expectEqual((await http(member, "DELETE", `/api/posts/${demoPost}`)).status, 403, "apagar com histórico");
+    expectTrue(Boolean(await one(db, `SELECT id FROM PostItem WHERE id = ?`, [demoPost])), "post apagado");
+  });
+  await check("membro não abre equipe nem configurações", async () => {
+    for (const path of ["/dashboard/team", "/dashboard/settings", "/dashboard/clients/new"]) {
+      const page = await http(member, "GET", path);
+      expectTrue([302, 303, 307].includes(page.status), `${path}: status ${page.status}`);
+      expectEqual(new URL(page.headers.get("location") ?? "", BASE).pathname, "/dashboard", path);
+    }
+    const team = await http(member, "GET", "/api/team");
+    expectEqual((team.json.viewer as { role: string }).role, "member");
+    const target = await one(db, `SELECT m.id FROM Membership m JOIN User u ON u.id = m.userId WHERE u.email = 'review@approove.com'`);
+    expectEqual((await http(member, "PATCH", `/api/team/${target!.id}`, { role: "member" })).status, 403, "trocar função");
+    expectEqual((await http(member, "DELETE", `/api/team/${target!.id}`)).status, 403, "remover");
+    expectEqual((await http(member, "POST", "/api/team", { email: "x@qa.test", role: "member" })).status, 403, "convidar");
+  });
   await check("admin não remove outro admin nem convida admin", async () => {
     const reviewAdmin = await login("review@approove.com", "member123");
     expectEqual((await http(reviewAdmin, "POST", "/api/team", { email: "novo-admin@qa.test", role: "admin" })).status, 403);
