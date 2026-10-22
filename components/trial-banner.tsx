@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { requireOrganization } from "@/lib/auth";
+import { canManageWorkspace, requireOrganization } from "@/lib/auth";
 import { getAccessState } from "@/lib/billing-access";
 import { getRequestLocale } from "@/lib/request-locale";
 import { localizedText } from "@/lib/locale";
 
 export async function TrialBanner() {
-  const [{ organization }, locale] = await Promise.all([
+  const [{ membership, organization }, locale] = await Promise.all([
     requireOrganization(),
     getRequestLocale(),
   ]);
@@ -28,7 +28,7 @@ export async function TrialBanner() {
       <span className={urgent ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground"}>
         {label}
       </span>
-      {urgent && (
+      {urgent && canManageWorkspace(membership.role) && (
         <Link
           href="/dashboard/settings"
           className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground"

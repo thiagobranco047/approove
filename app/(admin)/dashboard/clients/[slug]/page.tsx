@@ -378,7 +378,12 @@ export default function ClientDetailPage() {
   const handleDeletePost = async (postId: string) => {
     if (!confirm("Tem certeza que deseja excluir esta publicação?")) return;
     try {
-      await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+      const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Não foi possível excluir a publicação");
+        return;
+      }
       fetchClient();
     } catch (error) {
       console.error("Error deleting post:", error);
@@ -510,16 +515,19 @@ export default function ClientDetailPage() {
             </a>
           </Button>
 
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href={`${calendarHref}${shareToken ? `?t=${shareToken}` : ""}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Visão do cliente
-            </a>
-          </Button>
+          {/* Visão do cliente usa o link da agência, que só owner/admin recebem. */}
+          {shareToken && (
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href={`${calendarHref}?t=${shareToken}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Visão do cliente
+              </a>
+            </Button>
+          )}
 
           <Button size="sm" onClick={openCreatePost}>
             <Plus className="h-4 w-4 mr-2" />
@@ -760,38 +768,44 @@ export default function ClientDetailPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Nome</Label>
-                  <Input value={infoForm.name} onChange={(e) => setInfoForm((p) => ({ ...p, name: e.target.value }))} />
+                  <Input readOnly={!canManage} value={infoForm.name} onChange={(e) => setInfoForm((p) => ({ ...p, name: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>CNPJ</Label>
-                  <Input value={infoForm.cnpj} onChange={(e) => setInfoForm((p) => ({ ...p, cnpj: e.target.value }))} />
+                  <Input readOnly={!canManage} value={infoForm.cnpj} onChange={(e) => setInfoForm((p) => ({ ...p, cnpj: e.target.value }))} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Endereço</Label>
-                <Input value={infoForm.address} onChange={(e) => setInfoForm((p) => ({ ...p, address: e.target.value }))} />
+                <Input readOnly={!canManage} value={infoForm.address} onChange={(e) => setInfoForm((p) => ({ ...p, address: e.target.value }))} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Website</Label>
-                  <Input value={infoForm.website} onChange={(e) => setInfoForm((p) => ({ ...p, website: e.target.value }))} />
+                  <Input readOnly={!canManage} value={infoForm.website} onChange={(e) => setInfoForm((p) => ({ ...p, website: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Instagram</Label>
-                  <Input value={infoForm.instagram} onChange={(e) => setInfoForm((p) => ({ ...p, instagram: e.target.value }))} />
+                  <Input readOnly={!canManage} value={infoForm.instagram} onChange={(e) => setInfoForm((p) => ({ ...p, instagram: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Facebook</Label>
-                  <Input value={infoForm.facebook} onChange={(e) => setInfoForm((p) => ({ ...p, facebook: e.target.value }))} />
+                  <Input readOnly={!canManage} value={infoForm.facebook} onChange={(e) => setInfoForm((p) => ({ ...p, facebook: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>LinkedIn</Label>
-                  <Input value={infoForm.linkedin} onChange={(e) => setInfoForm((p) => ({ ...p, linkedin: e.target.value }))} />
+                  <Input readOnly={!canManage} value={infoForm.linkedin} onChange={(e) => setInfoForm((p) => ({ ...p, linkedin: e.target.value }))} />
                 </div>
               </div>
-              <Button onClick={handleSaveInfo} disabled={infoSaving}>
-                {infoSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</> : "Salvar alterações"}
-              </Button>
+              {canManage ? (
+                <Button onClick={handleSaveInfo} disabled={infoSaving}>
+                  {infoSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</> : "Salvar alterações"}
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Só proprietários e administradores editam os dados do cliente.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

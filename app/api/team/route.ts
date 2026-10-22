@@ -20,7 +20,7 @@ const inviteSchema = z.object({
 
 export async function GET() {
   try {
-    const { organization } = await requireOrganization();
+    const { organization, membership } = await requireOrganization();
 
     const members = await prisma.membership.findMany({
       where: { organizationId: organization.id },
@@ -37,7 +37,10 @@ export async function GET() {
       orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     });
 
-    return NextResponse.json({ members });
+    return NextResponse.json({
+      members,
+      viewer: { membershipId: membership.id, role: membership.role },
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

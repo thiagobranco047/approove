@@ -94,6 +94,14 @@ export default function TeamPage() {
   const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState("");
+  const [viewer, setViewer] = useState<{ membershipId: string; role: string } | null>(null);
+  const isOwner = viewer?.role === "owner";
+
+  // Espelha a API: só o owner mexe em admins; ninguém mexe no owner nem em si mesmo.
+  const canManageMember = (member: MemberData) => {
+    if (!viewer || member.role === "owner" || member.id === viewer.membershipId) return false;
+    return isOwner || member.role === "member";
+  };
 
   useEffect(() => {
     fetchMembers();
@@ -105,6 +113,7 @@ export default function TeamPage() {
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
       setMembers(data.members);
+      setViewer(data.viewer ?? null);
     } catch (err) {
       console.error("Error fetching team:", err);
     } finally {
@@ -244,7 +253,7 @@ export default function TeamPage() {
 
               <div className="space-y-2">
                 <Label>{tr("Função", "Role")}</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className={`grid gap-3 ${isOwner ? "grid-cols-2" : "grid-cols-1"}`}>
                   <button
                     type="button"
                     onClick={() => setInviteRole("member")}
@@ -259,9 +268,10 @@ export default function TeamPage() {
                       <span className="text-sm font-medium">{tr("Membro", "Member")}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {tr("Pode visualizar e interagir com o conteúdo", "Can view and interact with content")}
+                      {tr("Trabalha nas publicações e no fluxo de aprovação", "Works on posts and the approval flow")}
                     </span>
                   </button>
+                  {isOwner && (
                   <button
                     type="button"
                     onClick={() => setInviteRole("admin")}
@@ -276,9 +286,10 @@ export default function TeamPage() {
                       <span className="text-sm font-medium">{tr("Administrador", "Admin")}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {tr("Pode gerenciar membros e conteúdo", "Can manage members and content")}
+                      {tr("Gerencia clientes, equipe, links e cobrança", "Manages clients, team, links and billing")}
                     </span>
                   </button>
+                  )}
                 </div>
               </div>
 
@@ -429,7 +440,7 @@ export default function TeamPage() {
                       })}
                     </span>
 
-                    {member.role !== "owner" ? (
+                    {canManageMember(member) ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -441,7 +452,7 @@ export default function TeamPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {member.role === "member" && (
+                          {isOwner && member.role === "member" && (
                             <DropdownMenuItem
                               onClick={() =>
                                 handleChangeRole(member.id, "admin")
@@ -451,7 +462,7 @@ export default function TeamPage() {
                               {tr("Promover a Administrador", "Promote to Admin")}
                             </DropdownMenuItem>
                           )}
-                          {member.role === "admin" && (
+                          {isOwner && member.role === "admin" && (
                             <DropdownMenuItem
                               onClick={() =>
                                 handleChangeRole(member.id, "member")
@@ -461,7 +472,7 @@ export default function TeamPage() {
                               {tr("Rebaixar a Membro", "Change to Member")}
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
+                          {isOwner && <DropdownMenuSeparator />}
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() =>

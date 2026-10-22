@@ -56,6 +56,7 @@ export default function ClientsPage() {
   const DELETE_CONFIRMATION_WORD = tr("DELETAR", "DELETE");
   const router = useRouter();
   const [clients, setClients] = useState<ClientData[]>([]);
+  const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -78,6 +79,7 @@ export default function ClientsPage() {
         return;
       }
       setClients(data.clients);
+      setCanManage(data.canManage === true);
     } catch {
       setLoadError(tr("Erro de conexão. Verifique sua rede e tente novamente.", "Connection error. Check your network and try again."));
     } finally {
@@ -160,10 +162,12 @@ export default function ClientsPage() {
             {tr("Gerencie sua carteira de clientes", "Manage your client roster")}
           </p>
         </div>
-        <Button onClick={() => router.push("/dashboard/clients/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          {tr("Novo Cliente", "New client")}
-        </Button>
+        {canManage && (
+          <Button onClick={() => router.push("/dashboard/clients/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            {tr("Novo Cliente", "New client")}
+          </Button>
+        )}
       </div>
 
       {clients.length > 0 && (
@@ -210,9 +214,11 @@ export default function ClientsPage() {
             <p className="text-sm text-muted-foreground mt-1">
               {search
                 ? tr("Tente outro termo de busca", "Try another search term")
-                : tr("Comece adicionando seu primeiro cliente", "Start by adding your first client")}
+                : canManage
+                  ? tr("Comece adicionando seu primeiro cliente", "Start by adding your first client")
+                  : tr("Peça a um administrador para cadastrar clientes", "Ask an admin to add clients")}
             </p>
-            {!search && (
+            {!search && canManage && (
               <Button
                 className="mt-4"
                 onClick={() => router.push("/dashboard/clients/new")}
@@ -259,18 +265,20 @@ export default function ClientsPage() {
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        title={tr("Deletar cliente", "Delete client")}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDeleteDialog(client);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canManage && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          title={tr("Deletar cliente", "Delete client")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteDialog(client);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 

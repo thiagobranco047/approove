@@ -355,6 +355,25 @@ approove/
 - Login com email/senha (bcrypt) ou Google OAuth
 - Sessão via JWT · middleware protege `/dashboard/*` e `/onboarding`
 
+Papéis na agência (`Membership.role`), conferidos na API e refletidos na UI:
+
+| Ação | Owner | Admin | Member |
+|------|:-----:|:-----:|:------:|
+| Ver clientes, calendários, posts e histórico | ✅ | ✅ | ✅ |
+| Criar/editar posts, mídias e slides; delegar; mudar etapa de produção | ✅ | ✅ | ✅ |
+| Comentar e criar pins como agência | ✅ | ✅ | ✅ |
+| Apagar post ainda sem histórico de aprovação | ✅ | ✅ | ✅ |
+| Apagar post com histórico de aprovação | ✅ | ✅ | ❌ |
+| Aprovar, pedir ajustes ou reabrir em nome do cliente | ✅ | ✅ | ❌ |
+| Criar, editar e apagar clientes | ✅ | ✅ | ❌ |
+| Ver/gerar o link da agência; gerenciar revisores e convites | ✅ | ✅ | ❌ |
+| Abrir Time e Configurações (plano e cobrança) | ✅ | ✅ | ❌ |
+| Convidar e remover membros | ✅ | ✅ | ❌ |
+| Convidar, promover, rebaixar ou remover admins | ✅ | ❌ | ❌ |
+
+O link da agência tem permissão de aprovador e registra as ações como cliente;
+por isso só owner/admin o recebem, como os links pessoais de revisores.
+
 **2. Clientes (Share Token + Convite)**
 - Link: `/c/[slug]/[version]?t=TOKEN`
 - **Token legado**: acesso completo de revisão (comentar, anotar, aprovar)
@@ -363,7 +382,7 @@ approove/
   - `reviewer` - comenta e cria pins
   - `approver` - comenta, pins e altera status
 - Comentários e pins registram `authorName` e `reviewerId` quando via convite
-- Admin logado também pode interagir na mesma tela
+- Owner/admin logado também aprova na mesma tela; member comenta e anota, mas não aprova
 
 ## Scripts Disponíveis
 

@@ -75,7 +75,9 @@ export async function GET(
       access: authResult.isAgency
         ? {
             reviewer: null,
-            permissions: rolePermissions("approver"),
+            permissions: authResult.canManage
+              ? rolePermissions("approver")
+              : { ...rolePermissions("reviewer"), canApprove: false },
             legacy: false,
           }
         : {

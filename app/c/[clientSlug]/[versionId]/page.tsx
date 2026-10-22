@@ -664,8 +664,9 @@ export default function CalendarPage() {
         onCalendarClick={() =>
           openCalendarForDate(viewDate ?? currentMonth)
         }
-        canApprove={isAdmin || permissions.canApprove}
-        allowPendingReset={isAdmin}
+        canApprove={permissions.canApprove}
+        allowPendingReset={isAdmin && permissions.canApprove}
+        showReadOnlyStatus={isAdmin}
         viewingLatestPackage={viewingLatestPackage}
         onShowCurrentVersion={() => showCurrentVersionRef.current()}
         showStatus={Boolean(currentPost)}

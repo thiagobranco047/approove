@@ -80,6 +80,7 @@ export default function DashboardPage() {
   );
   const router = useRouter();
   const [clients, setClients] = useState<ClientData[]>([]);
+  const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskData[]>([]);
@@ -98,6 +99,7 @@ export default function DashboardPage() {
         return;
       }
       setClients(data.clients);
+      setCanManage(data.canManage === true);
     } catch {
       setLoadError(tr("Erro de conexão. Verifique sua rede e tente novamente.", "Connection error. Check your network and try again."));
     } finally {
@@ -211,10 +213,12 @@ export default function DashboardPage() {
             {tr("Visão geral do seu conteúdo e clientes", "Overview of your content and clients")}
           </p>
         </div>
-        <Button onClick={() => router.push("/dashboard/clients/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          {tr("Novo Cliente", "New client")}
-        </Button>
+        {canManage && (
+          <Button onClick={() => router.push("/dashboard/clients/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            {tr("Novo Cliente", "New client")}
+          </Button>
+        )}
       </div>
 
       {tasks.length > 0 && (
@@ -427,15 +431,19 @@ export default function DashboardPage() {
               <Users className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-medium">{tr("Nenhum cliente cadastrado", "No clients yet")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {tr("Comece adicionando seu primeiro cliente", "Start by adding your first client")}
+                {canManage
+                  ? tr("Comece adicionando seu primeiro cliente", "Start by adding your first client")
+                  : tr("Peça a um administrador para cadastrar clientes", "Ask an admin to add clients")}
               </p>
-              <Button
-                className="mt-4"
-                onClick={() => router.push("/dashboard/clients/new")}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {tr("Adicionar Cliente", "Add client")}
-              </Button>
+              {canManage && (
+                <Button
+                  className="mt-4"
+                  onClick={() => router.push("/dashboard/clients/new")}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {tr("Adicionar Cliente", "Add client")}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (

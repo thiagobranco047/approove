@@ -13,14 +13,19 @@ import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/locale-provider";
 import { localizedText } from "@/lib/locale";
 
-export function MobileSidebar() {
+export function MobileSidebar({ canManage }: { canManage: boolean }) {
   const locale = useLocale();
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: tr("Clientes", "Clients"), href: "/dashboard/clients", icon: Users },
-    { name: tr("Time", "Team"), href: "/dashboard/team", icon: Building2 },
-    { name: tr("Configurações", "Settings"), href: "/dashboard/settings", icon: Settings },
+    // Equipe e configurações são de owner/admin.
+    ...(canManage
+      ? [
+          { name: tr("Time", "Team"), href: "/dashboard/team", icon: Building2 },
+          { name: tr("Configurações", "Settings"), href: "/dashboard/settings", icon: Settings },
+        ]
+      : []),
   ];
   const [open, setOpen] = useState(false);
   const pathname = usePathname();

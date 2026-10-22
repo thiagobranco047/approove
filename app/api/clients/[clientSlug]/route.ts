@@ -43,8 +43,10 @@ export async function GET(
       return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
     }
 
+    const canManage = canManageWorkspace(membership.role);
     const latestVersion = client.versions[0];
-    const agencyShareToken = latestVersion
+    // O link da agência aprova como cliente: membros não recebem, como os links de revisores.
+    const agencyShareToken = canManage && latestVersion
       ? await findAgencyShareToken(latestVersion.id)
       : null;
 
@@ -59,7 +61,7 @@ export async function GET(
 
     return NextResponse.json({
       client: clientWithShareToken,
-      canManage: canManageWorkspace(membership.role),
+      canManage,
     });
   } catch (error) {
     const handled = apiErrorResponse(error);
@@ -74,7 +76,7 @@ export async function PATCH(
   { params }: { params: Promise<{ clientSlug: string }> }
 ) {
   try {
-    const { organization } = await requireActiveOrganization();
+    const { organization } = await requireActiveOrganization({ roles: ["owner", "admin"] });
     const { clientSlug } = await params;
 
     const client = await prisma.client.findFirst({

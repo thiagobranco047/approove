@@ -2,7 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TrialBanner } from "@/components/trial-banner";
-import { requireOrganization } from "@/lib/auth";
+import { canManageWorkspace, requireOrganization } from "@/lib/auth";
 import { redirectForAuthError } from "@/lib/auth-redirect";
 
 export default async function AdminLayout({
@@ -10,19 +10,21 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  let membership;
   try {
-    await requireOrganization();
+    ({ membership } = await requireOrganization());
   } catch (error) {
     redirectForAuthError(error);
   }
+  const canManage = canManageWorkspace(membership.role);
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30">
-      <AppSidebar />
+      <AppSidebar canManage={canManage} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6">
-          <MobileSidebar />
+          <MobileSidebar canManage={canManage} />
           <div className="flex-1" />
           <TrialBanner />
           <ThemeToggle />
