@@ -25,7 +25,7 @@ function limitLabel(value: number | null, singular: string, plural: string, unli
   return `${value} ${value === 1 ? singular : plural}`;
 }
 
-export function LandingPricing({ locale }: { locale: AppLocale }) {
+export function LandingPricing({ locale, showHeader = true }: { locale: AppLocale; showHeader?: boolean }) {
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
   const pricingByPlan = planPricing(locale);
   const planCopy: Record<(typeof planOrder)[number], { name: string; description: string; highlighted?: boolean }> = {
@@ -37,19 +37,23 @@ export function LandingPricing({ locale }: { locale: AppLocale }) {
 
   return (
     <section id="precos" className="scroll-mt-16">
-      <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
-        <Eyebrow>{tr("Preços", "Pricing")}</Eyebrow>
-        <Reveal bare>
-          <SectionHeading>
-            <MaskedWords text={tr("Planos que crescem com a sua carteira.", "Plans that grow with your client roster.")} />
-          </SectionHeading>
-        </Reveal>
-        <div className="mt-6">
-          <TrialNote>
-            {tr("15 dias grátis · sem cartão", "15 days free · no credit card")}
-          </TrialNote>
-        </div>
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`mx-auto max-w-7xl px-5 sm:px-8 ${showHeader ? "py-24" : "pb-24"}`}>
+        {showHeader ? (
+          <>
+            <Eyebrow>{tr("Preços", "Pricing")}</Eyebrow>
+            <Reveal bare>
+              <SectionHeading>
+                <MaskedWords text={tr("Planos que crescem com a sua carteira.", "Plans that grow with your client roster.")} />
+              </SectionHeading>
+            </Reveal>
+            <div className="mt-6">
+              <TrialNote>
+                {tr("15 dias grátis · sem cartão", "15 days free · no credit card")}
+              </TrialNote>
+            </div>
+          </>
+        ) : null}
+        <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${showHeader ? "mt-16" : "mt-8"}`}>
           {planOrder.map((plan, i) => {
             const { name, description, highlighted } = planCopy[plan];
             const limits = PLAN_LIMITS[plan];

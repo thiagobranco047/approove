@@ -4,6 +4,43 @@ export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: AppLocale = "en";
 
+export const LOCALE_COOKIE = "approove-locale";
+
+export function isAppLocale(value: string | null | undefined): value is AppLocale {
+  return value === "en" || value === "pt-BR";
+}
+
+/**
+ * Idioma travado pela URL pública. `/` e os legais são sempre pt-BR;
+ * `/en` é sempre inglês. Rotas da app retornam null (geo ou cookie).
+ */
+export function marketingLocaleFromPath(pathname: string): AppLocale | null {
+  if (pathname === "/en" || pathname.startsWith("/en/")) {
+    return "en";
+  }
+
+  if (
+    pathname === "/" ||
+    pathname === "/termos" ||
+    pathname === "/privacidade" ||
+    pathname === "/precos" ||
+    pathname === "/como-funciona"
+  ) {
+    return "pt-BR";
+  }
+
+  return null;
+}
+
+/** Landing em PT/EN grava preferência. Legais em português não sobrescrevem `/en`. */
+export function persistableMarketingLocale(pathname: string): AppLocale | null {
+  if (pathname === "/en" || pathname.startsWith("/en/")) return "en";
+  if (pathname === "/" || pathname === "/precos" || pathname === "/como-funciona") {
+    return "pt-BR";
+  }
+  return null;
+}
+
 export function localeFromRequest({
   country,
   acceptLanguage,

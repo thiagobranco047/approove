@@ -5,6 +5,7 @@ import { Parallax } from "@/components/landing/parallax";
 import { Eyebrow, PillLink, TrialNote } from "@/components/landing/ui";
 import { cream, green, ink } from "@/components/landing/tokens";
 import { localizedText, type AppLocale } from "@/lib/locale";
+import { marketingPath } from "@/lib/marketing-routes";
 
 export function LandingFinalCta({ locale }: { locale: AppLocale }) {
   const tr = (pt: string, en: string) => localizedText(locale, pt, en);
@@ -39,25 +40,19 @@ export function LandingFinalCta({ locale }: { locale: AppLocale }) {
             </div>
             <nav className="grid grid-cols-2 gap-x-14 gap-y-3 text-sm font-semibold sm:text-right">
               {[
-                ["#como-funciona", tr("Como funciona", "How it works")],
-                ["#aprovacao", tr("Aprovação", "Approval")],
-                ["#funcionalidades", tr("Funcionalidades", "Features")],
-                ["#precos", tr("Preços", "Pricing")],
+                [marketingPath("how", locale), tr("Como funciona", "How it works")],
+                [`${marketingPath("home", locale)}#funcionalidades`, tr("Funcionalidades", "Features")],
+                [marketingPath("pricing", locale), tr("Preços", "Pricing")],
                 ["/login", tr("Entrar", "Log in")],
                 ["/signup", tr("Criar conta", "Create account")],
                 ["/termos", tr("Termos de Uso", "Terms of Use")],
                 ["/privacidade", tr("Privacidade", "Privacy")],
-              ].map(([href, label]) =>
-                href.startsWith("#") ? (
-                  <a key={href} href={href} className="opacity-60 transition-opacity hover:opacity-100">
-                    {label}
-                  </a>
-                ) : (
-                  <Link key={href} href={href} className="opacity-60 transition-opacity hover:opacity-100">
-                    {label}
-                  </Link>
-                )
-              )}
+                [locale === "en" ? "/" : "/en", locale === "en" ? "Português" : "English"],
+              ].map(([href, label]) => (
+                <Link key={`${href}-${label}`} href={href} className="opacity-60 transition-opacity hover:opacity-100">
+                  {label}
+                </Link>
+              ))}
             </nav>
           </div>
         </div>

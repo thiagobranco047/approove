@@ -1,19 +1,24 @@
 import type { Metadata } from "next";
 import { LegalPageLayout, LegalSection } from "@/components/legal-page-layout";
+import { getAppBaseUrl } from "@/lib/app-url";
+import { INDEX_ROBOTS } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Política de Privacidade - Approove",
-  description: "Política de Privacidade da plataforma Approove.",
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: "Política de Privacidade",
+    description: "Política de Privacidade da plataforma Approove.",
+    robots: INDEX_ROBOTS,
+    alternates: { canonical: `${getAppBaseUrl()}/privacidade` },
+  };
+}
 
 export default function PrivacidadePage() {
   return (
     <LegalPageLayout title="Política de Privacidade" updatedAt="12 de julho de 2026">
       <p className="text-muted-foreground">
-        Este documento é um modelo padrão de Política de Privacidade,
-        elaborado com base na Lei Geral de Proteção de Dados (LGPD, Lei nº
-        13.709/2018) e disponibilizado como ponto de partida. Recomendamos
-        revisão por um advogado ou DPO antes da publicação em produção.
+        Esta Política de Privacidade descreve como o Approove trata dados
+        pessoais na plataforma, em conformidade com a Lei Geral de Proteção
+        de Dados (LGPD, Lei nº 13.709/2018).
       </p>
 
       <LegalSection title="1. Quem trata seus dados">

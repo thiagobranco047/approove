@@ -1,11 +1,9 @@
 import "server-only";
 
 import { headers } from "next/headers";
-import { localeFromRequest, type AppLocale } from "@/lib/locale";
+import { isAppLocale, localeFromRequest, type AppLocale } from "@/lib/locale";
 
-export async function getRequestLocale(): Promise<AppLocale> {
-  const requestHeaders = await headers();
-
+function geoLocaleFromHeaders(requestHeaders: Headers): AppLocale {
   return localeFromRequest({
     country:
       requestHeaders.get("x-approove-country") ??
@@ -13,4 +11,21 @@ export async function getRequestLocale(): Promise<AppLocale> {
       requestHeaders.get("cf-ipcountry"),
     acceptLanguage: requestHeaders.get("accept-language"),
   });
+}
+
+/** UI: URL de marketing ou cookie, senão país / Accept-Language. */
+export async function getRequestLocale(): Promise<AppLocale> {
+  const requestHeaders = await headers();
+  const explicit = requestHeaders.get("x-approove-locale");
+
+  if (isAppLocale(explicit)) {
+    return explicit;
+  }
+
+  return geoLocaleFromHeaders(requestHeaders);
+}
+
+/** Cobrança: só geografia, para um brasileiro em `/en` continuar em BRL. */
+export async function getBillingLocale(): Promise<AppLocale> {
+  return geoLocaleFromHeaders(await headers());
 }
