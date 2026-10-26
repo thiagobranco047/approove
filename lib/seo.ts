@@ -122,11 +122,11 @@ export function marketingHomeMetadata(locale: AppLocale, baseUrl: string): Metad
     pathPt: "/",
     pathEn: "/en",
     titlePt: "Approove - Aprovação de conteúdo para agências",
-    titleEn: "Approove - Content approval for agencies",
+    titleEn: "Content approval software for agencies | Approove",
     descriptionPt:
       "Organize o calendário editorial, envie o conteúdo para revisão e saiba exatamente o que o cliente aprovou. Sem aprovação espalhada no WhatsApp, e-mail ou Drive.",
     descriptionEn:
-      "Organize the editorial calendar, send content for review, and know exactly what the client approved. Stop chasing approvals across WhatsApp, email, and Drive.",
+      "Content approval software for agencies. Organize the editorial calendar, send work for review, and know exactly what the client approved — without WhatsApp, email, or Drive.",
   });
 }
 

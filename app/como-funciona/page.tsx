@@ -14,11 +14,11 @@ export function generateMetadata() {
     pathPt: "/como-funciona",
     pathEn: "/en/how-it-works",
     titlePt: "Como funciona - Approove",
-    titleEn: "How it works - Approove",
+    titleEn: "How client content approval works | Approove",
     descriptionPt:
       "A agência organiza o calendário, libera só o que está pronto e o cliente aprova pelo link. O Approove registra quem aprovou, quando e em qual versão.",
     descriptionEn:
-      "The agency organizes the calendar, releases only what is ready, and the client approves via link. Approove records who approved, when, and which version.",
+      "How client content approval works: the agency organizes the calendar, releases only what is ready, and the client reviews by link. Approove records who approved, when, and which version.",
   });
 }
 
