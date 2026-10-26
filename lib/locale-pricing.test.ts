@@ -48,6 +48,9 @@ describe("marketing locale URLs", () => {
       "x-default": "https://approoveapp.com/",
     });
     expect(pt.title).toEqual({ absolute: "Approove - Aprovação de conteúdo para agências" });
-    expect(en.title).toEqual({ absolute: "Approove - Content approval for agencies" });
+    expect(en.title).toEqual({
+      absolute: "Content approval software for agencies | Approove",
+    });
+    expect(en.description).toMatch(/Content approval software for agencies/i);
   });
 });

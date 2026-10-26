@@ -12,11 +12,11 @@ export function generateMetadata() {
     pathPt: "/precos",
     pathEn: "/en/pricing",
     titlePt: "Preços - Approove",
-    titleEn: "Pricing - Approove",
+    titleEn: "Approove pricing | Agency content approval plans",
     descriptionPt:
       "Planos Solo, Starter, Pro e Studio para aprovação de conteúdo. 15 dias grátis, sem cartão. Publicações ilimitadas.",
     descriptionEn:
-      "Solo, Starter, Pro, and Studio plans for content approval. 15 days free, no credit card. Unlimited posts.",
+      "Approove pricing for agency content approval. Solo, Starter, Pro, and Studio plans. 15-day trial, no credit card. Unlimited posts.",
   });
 }
 
