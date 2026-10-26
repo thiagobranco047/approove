@@ -5,6 +5,7 @@ import { Eyebrow, PillLink, TrialNote } from "@/components/landing/ui";
 import { ApprovedBadge, CalendarStrip, CreativeCanvas, ProductChrome } from "@/components/landing/product-frames";
 import { blue } from "@/components/landing/tokens";
 import { localizedText, type AppLocale } from "@/lib/locale";
+import { marketingPath } from "@/lib/marketing-routes";
 
 function HeroHeadline({ locale }: { locale: AppLocale }) {
   const lines = locale === "pt-BR" ? [["Chega", "de", "aprovar"], ["posts", "pelo"]] : [["Stop", "approving"], ["posts", "on"]];
@@ -80,13 +81,13 @@ export function LandingHero({ locale }: { locale: AppLocale }) {
           style={{ "--d": "1350ms", color: "rgba(27,25,23,0.65)" } as React.CSSProperties}
         >
           {tr(
-            "Organize o calendário, envie o conteúdo para revisão e saiba exatamente o que o cliente aprovou - tudo em um único lugar.",
-            "Organize the calendar, send content for review, and know exactly what your client approved - all in one place."
+            "O Approove é o espaço de aprovação de conteúdo para agências. Organize o calendário, envie para revisão e saiba exatamente o que o cliente aprovou — sem espalhar a decisão no WhatsApp, e-mail ou Drive.",
+            "Approove is the content-approval workspace for agencies. Organize the calendar, send work for review, and know exactly what the client approved — without chasing decisions across WhatsApp, email, or Drive."
           )}
         </p>
         <div className="fade-up flex flex-wrap items-center gap-3" style={{ "--d": "1500ms" } as React.CSSProperties}>
           <PillLink href="/signup">{tr("Testar grátis", "Start free trial")}</PillLink>
-          <PillLink href="#como-funciona" variant="outline">
+          <PillLink href={marketingPath("how", locale)} variant="outline">
             {tr("Ver como funciona", "See how it works")}
           </PillLink>
         </div>

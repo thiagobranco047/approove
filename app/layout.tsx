@@ -13,22 +13,14 @@ import { CookieConsent } from "@/components/cookie-consent";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getRequestLocale();
-
+export function generateMetadata(): Metadata {
   return {
     metadataBase: new URL(getAppBaseUrl()),
-    ...(locale === "pt-BR"
-      ? {
-          title: "Approove - Aprovação de conteúdo para agências",
-          description:
-            "Calendário editorial e fluxo de aprovação com clientes. Organize, revise e registre o que foi aprovado.",
-        }
-      : {
-          title: "Approove - Content approval for agencies",
-          description:
-            "Editorial calendar and client approval workflow. Organize, review, and record what was approved.",
-        }),
+    applicationName: "Approove",
+    title: {
+      default: "Approove",
+      template: "%s | Approove",
+    },
   };
 }
 

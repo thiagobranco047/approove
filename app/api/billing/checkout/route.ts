@@ -6,7 +6,7 @@ import { absoluteUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { currencyForLocale } from "@/lib/pricing";
-import { getRequestLocale } from "@/lib/request-locale";
+import { getBillingLocale } from "@/lib/request-locale";
 import { hasLiveSubscription } from "@/lib/billing-access";
 import { apiErrorResponse } from "@/lib/api-error";
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       stripeCustomerId = saved?.stripeCustomerId ?? customer.id;
     }
 
-    const currency = currencyForLocale(await getRequestLocale());
+    const currency = currencyForLocale(await getBillingLocale());
 
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",

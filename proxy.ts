@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import {
+  isAppLocale,
+  LOCALE_COOKIE,
+  marketingLocaleFromPath,
+  persistableMarketingLocale,
+} from "@/lib/locale";
+
+function localeCookieOptions(req: NextRequest) {
+  return {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax" as const,
+    secure: req.nextUrl.protocol === "https:",
+  };
+}
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -40,9 +55,26 @@ export async function proxy(req: NextRequest) {
   }
   requestHeaders.set("x-approove-pathname", pathname);
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  const pathLocale = marketingLocaleFromPath(pathname);
+  const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;
+  const uiLocale = pathLocale ?? (isAppLocale(cookieLocale) ? cookieLocale : null);
+
+  if (uiLocale) {
+    requestHeaders.set("x-approove-locale", uiLocale);
+  }
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const persist = persistableMarketingLocale(pathname);
+
+  if (persist) {
+    response.cookies.set(LOCALE_COOKIE, persist, localeCookieOptions(req));
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|sitemap.xml|robots.txt|llms.txt).*)",
+  ],
 };
