@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Keyboard } from "swiper/modules";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, Square } from "lucide-react";
 import { SlideMediaPreview } from "./slide-media-preview";
+import { AttachmentSlideGrid } from "./attachment-slide-grid";
+import { getAttachmentAspectRatio } from "./post-material-form";
+import type { AttachmentVersion } from "@/lib/types";
 import {
   isSequenceAttachment,
   resolveVersionSlides,
@@ -15,9 +18,55 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
+export type SequenceViewMode = "grid" | "single";
+
+export function ViewModeToggle({
+  value,
+  onChange,
+}: {
+  value: SequenceViewMode;
+  onChange: (mode: SequenceViewMode) => void;
+}) {
+  const options: { mode: SequenceViewMode; label: string; Icon: typeof LayoutGrid }[] = [
+    { mode: "grid", label: "Grid", Icon: LayoutGrid },
+    { mode: "single", label: "Individual", Icon: Square },
+  ];
+
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Modo de visualização"
+      className="inline-flex shrink-0 items-center rounded-md border bg-background/90 p-0.5 shadow-sm"
+      data-section="view-mode-toggle"
+    >
+      {options.map(({ mode, label, Icon }) => (
+        <button
+          key={mode}
+          type="button"
+          role="radio"
+          aria-checked={value === mode}
+          onClick={() => onChange(mode)}
+          className={`flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
+            value === mode
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 interface AttachmentSequenceViewerProps {
   attachmentType: string;
   version: AttachmentVersionRecord;
+  viewMode: SequenceViewMode;
+  onViewModeChange: (mode: SequenceViewMode) => void;
+  /** Habilita adicionar, reordenar e remover slides no grid. */
+  onVersionUpdated?: (version: AttachmentVersion) => void;
   canAnnotate?: boolean;
   author?: "agency" | "client";
   onPinCreate?: (
@@ -35,6 +84,9 @@ interface AttachmentSequenceViewerProps {
 export function AttachmentSequenceViewer({
   attachmentType,
   version,
+  viewMode,
+  onViewModeChange,
+  onVersionUpdated,
   canAnnotate = false,
   author = "agency",
   onPinCreate,
@@ -46,6 +98,22 @@ export function AttachmentSequenceViewer({
   const safeIndex = Math.min(activeSlideIndex, Math.max(slides.length - 1, 0));
   const currentSlide = slides[safeIndex];
   const showCarousel = isSequenceAttachment(attachmentType, slides.length);
+
+  if (viewMode === "grid") {
+    return (
+      <AttachmentSlideGrid
+        versionId={version.id}
+        attachmentType={attachmentType}
+        slides={slides}
+        aspectRatio={getAttachmentAspectRatio(attachmentType)}
+        onVersionUpdated={onVersionUpdated}
+        onOpenSlide={(index) => {
+          setActiveSlideIndex(index);
+          onViewModeChange("single");
+        }}
+      />
+    );
+  }
 
   const renderSlide = (
     slide: (typeof slides)[number],
@@ -70,7 +138,7 @@ export function AttachmentSequenceViewer({
 
   if (!showCarousel) {
     return (
-      <div className="absolute inset-0 p-4">
+      <div className="absolute inset-0 px-4 pb-4 pt-1">
         {renderSlide(
           currentSlide,
           onPinCreate
@@ -83,10 +151,11 @@ export function AttachmentSequenceViewer({
   }
 
   return (
-    <div className="absolute inset-0 p-4 flex flex-col min-h-0">
+    <div className="absolute inset-0 px-4 pb-4 pt-1 flex flex-col min-h-0">
       <div className="relative flex-1 min-h-0">
         <Swiper
           modules={[Navigation, Pagination, Keyboard]}
+          initialSlide={safeIndex}
           navigation={{
             prevEl: `.slide-prev-${version.id}`,
             nextEl: `.slide-next-${version.id}`,
